@@ -1,0 +1,127 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap");
+@import "tailwindcss";
+
+:root {
+  --oz-brand-green: #009a00;
+  --oz-brand-green-hover: #007a00;
+  --oz-brand-green-light: #e6f5e6;
+  --oz-brand-dark: #1f2937;
+  --oz-brand-orange: #f97316;
+  --oz-text-primary: #1f2937;
+  --oz-text-secondary: #6b7280;
+  --oz-text-inverse: #ffffff;
+  --oz-bg-primary: #ffffff;
+  --oz-bg-surface: #f3f4f6;
+  --oz-bg-brand: #009a00;
+  --oz-bg-dark: #1f2937;
+  --oz-font-heading: "Montserrat", sans-serif;
+  --oz-font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --oz-radius: 8px;
+  --oz-radius-lg: 16px;
+  --oz-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  --oz-shadow-lg: 0 8px 24px rgb(0 0 0 / 0.12);
+  --oz-max-width: 480px;
+  --oz-header-height: 64px;
+  --oz-safe-top: env(safe-area-inset-top, 0px);
+  --oz-safe-right: env(safe-area-inset-right, 0px);
+  --oz-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --oz-safe-left: env(safe-area-inset-left, 0px);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--oz-font-body);
+  color: var(--oz-text-primary);
+  background-color: var(--oz-bg-surface);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+  padding-left: var(--oz-safe-left);
+  padding-right: var(--oz-safe-right);
+}
+
+header {
+  padding-top: var(--oz-safe-top);
+  height: calc(var(--oz-header-height) + var(--oz-safe-top)) !important;
+}
+
+.oz-bottom-nav {
+  padding-bottom: var(--oz-safe-bottom);
+  padding-left: var(--oz-safe-left);
+  padding-right: var(--oz-safe-right);
+}
+
+.oz-bottom-nav a {
+  min-height: 58px;
+}
+
+.oz-bottom-nav-label {
+  display: block;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: visible;
+  padding-bottom: 1px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.oz-toast-stack {
+  bottom: calc(5.25rem + var(--oz-safe-bottom));
+}
+
+.oz-network-banner {
+  bottom: calc(4.5rem + var(--oz-safe-bottom));
+}
+
+.oz-install-prompt {
+  bottom: calc(5.25rem + var(--oz-safe-bottom));
+}
+
+.oz-modal-backdrop {
+  min-height: 100dvh;
+  padding: calc(0.75rem + var(--oz-safe-top)) 1rem calc(4.5rem + var(--oz-safe-bottom));
+}
+
+.oz-success-sheet {
+  max-height: calc(100dvh - var(--oz-safe-top) - var(--oz-safe-bottom) - 5.25rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.oz-altcha-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.oz-altcha-wrap altcha-widget {
+  display: block;
+  width: 100%;
+  --altcha-border-radius: 10px;
+  --altcha-color-base: #ffffff;
+  --altcha-color-border: #d1d5db;
+  --altcha-color-primary: var(--oz-brand-green);
+  --altcha-color-success: var(--oz-brand-green);
+  --altcha-max-width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--oz-font-heading);
+}
+
+.maplibregl-popup-content {
+  border-radius: var(--oz-radius);
+  padding: 12px 16px;
+  box-shadow: var(--oz-shadow);
+}
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }

@@ -1,0 +1,69 @@
+# ── Assets (kommen aus erfahre-assets via CI) ──────────────────────────────
+backend/challenges.json
+frontend/public/images/*.png
+frontend/public/images/*.jpg
+frontend/public/images/*.webp
+# Maskottchen-Bilder bleiben im Repo (aus öffentlichem openzirndorf-Repo)
+!frontend/public/images/maskottchen/
+!frontend/public/images/maskottchen/**
+!backend/challenges.json.example
+
+# ── Credentials & Secrets ──────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.production
+*.tfvars
+!*.tfvars.example
+*.secret
+secrets/
+*.pem
+!backend/rdb-ca.pem
+*.key
+*.p12
+*.pfx
+
+# ── Python ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.sqlite3
+venv/
+.venv/
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Frontend ───────────────────────────────────────────────────────────────
+node_modules/
+dist/
+dev-dist/
+.vite/
+*.local
+
+# ── OpenTofu / Terraform ───────────────────────────────────────────────────
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/*.tfstate.*.backup
+infra/*.sql
+infra/*.dump
+infra/crash.log
+infra/override.tf
+infra/override.tf.json
+
+# ── Misc ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.bak
+*.swp
+*.orig

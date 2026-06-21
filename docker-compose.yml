@@ -1,0 +1,33 @@
+# Lokale Entwicklungsumgebung – NICHT für Produktion
+# Für Produktion: .env mit echten Werten anlegen und docker-compose.prod.yml verwenden
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: "sqlite+aiosqlite:///./biking.db"
+      # Nur für lokale Entwicklung – in Produktion per .env oder Infra-Secrets setzen
+      SECRET_KEY: "dev-secret-not-for-production"
+      ADMIN_TOKEN: "dev-admin-token"
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:4173"
+      FRONTEND_URL: "http://localhost:5173"
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    image: node:22-slim
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    environment:
+      BACKEND_URL: "http://backend:8000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install --legacy-peer-deps && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend

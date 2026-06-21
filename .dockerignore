@@ -1,0 +1,19 @@
+# Secrets und lokale Daten nie ins Image
+backend/.env
+backend/.env.*
+backend/*.db
+backend/*.sqlite
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/.venv/
+backend/venv/
+
+# challenges.json kommt via CI aus erfahre-assets (nicht im Repo)
+backend/challenges.json
+# Bilder werden via CI kurz vor dem Docker-Build eingekopiert → NICHT ignorieren
+
+# Build-Artefakte
+frontend/node_modules/
+frontend/dist/
+frontend/dev-dist/

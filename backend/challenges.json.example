@@ -1,0 +1,24 @@
+{
+  "checkpoints": [
+    {
+      "title": "Beispiel Sofort-Ort",
+      "description": "Kurzbeschreibung.",
+      "story": "Längerer Text.\n\nZweiter Absatz.",
+      "lat": 49.4412, "lon": 10.9393, "radius_m": 100,
+      "category": "kultur",
+      "image_url": "/images/beispiel.png",
+      "points": 25,
+      "date": null
+    },
+    {
+      "title": "Erster Tages-Ort",
+      "description": "Wird am 6. Juni freigeschaltet.",
+      "story": null,
+      "lat": 49.4439, "lon": 10.9552, "radius_m": 60,
+      "category": "verwaltung",
+      "image_url": null,
+      "points": 20,
+      "date": "2026-06-06"
+    }
+  ]
+}

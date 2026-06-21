@@ -1,0 +1,14 @@
+services:
+  backend:
+    image: ${REGISTRY_ENDPOINT}/biking-api:${IMAGE_TAG:-latest}
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      CORS_ORIGINS: ${FRONTEND_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      EVENT_START: ${EVENT_START:-2026-06-06}
+      EVENT_END: ${EVENT_END:-2026-06-28}
+    restart: unless-stopped
