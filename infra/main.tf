@@ -6,6 +6,19 @@ terraform {
     }
   }
   required_version = ">= 1.6"
+
+  backend "s3" {
+    bucket                      = "openzirndorf-tfstate"
+    key                         = "erfahre/terraform.tfstate"
+    region                      = "fr-par"
+    endpoint                    = "https://s3.fr-par.scw.cloud"
+    skip_credentials_validation = true
+    skip_requesting_account_id  = true
+    skip_metadata_api_check     = true
+    skip_region_validation      = true
+    force_path_style            = true
+    use_lockfile                = true
+  }
 }
 
 provider "scaleway" {

@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from auth import get_current_user
 from database import get_db
-from models import Badge, CheckIn, User, UserBadge
+from models import Badge, CheckIn, Suggestion, SurveyResponse, User, UserBadge
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -67,3 +67,15 @@ async def my_progress(
         checkin_count=checkin_count + current_user.manual_checkin_count,
         badges=badges,
     )
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_my_account(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await db.execute(delete(UserBadge).where(UserBadge.user_id == current_user.id))
+    await db.execute(delete(CheckIn).where(CheckIn.user_id == current_user.id))
+    await db.execute(delete(Suggestion).where(Suggestion.user_id == current_user.id))
+    await db.execute(delete(SurveyResponse).where(SurveyResponse.user_id == current_user.id))
+    await db.delete(current_user)

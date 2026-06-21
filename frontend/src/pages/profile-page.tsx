@@ -1,7 +1,8 @@
-import { Award, Bike, LogIn, MapPin, Star } from "lucide-react";
+import { Award, Bike, LogIn, MapPin, Star, Trash2 } from "lucide-react";
 import { ShareButton } from "../components/share-button";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { apiFetch } from "../api/client";
 import { fetchMyProgress } from "../api/client";
 import { OzFooter } from "../components/oz-footer";
 import type { AuthState, UserProgress } from "../types";
@@ -54,7 +55,22 @@ export function ProfilePage() {
   const [locationAuto, setLocationAuto] = useState(
     localStorage.getItem("oz_location_auto") === "true"
   );
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const auth = getAuth();
+
+  async function handleDeleteAccount() {
+    if (!deleteConfirm) { setDeleteConfirm(true); return; }
+    setDeleting(true);
+    try {
+      await apiFetch("/api/users/me", { method: "DELETE" });
+      localStorage.removeItem("auth");
+      window.location.href = "/";
+    } catch {
+      setDeleting(false);
+      setDeleteConfirm(false);
+    }
+  }
 
   function toggleLocationAuto() {
     const next = !locationAuto;
@@ -264,6 +280,20 @@ export function ProfilePage() {
           className="w-full rounded-2xl py-3 text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
         >
           Abmelden
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={deleting}
+          className="w-full rounded-2xl py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          style={deleteConfirm
+            ? { background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5" }
+            : { color: "#9ca3af", border: "1px solid #e5e7eb" }
+          }
+        >
+          <Trash2 className="w-4 h-4" />
+          {deleting ? "Wird gelöscht…" : deleteConfirm ? "Wirklich löschen? Nochmal tippen zum Bestätigen" : "Konto löschen"}
         </button>
       </div>
 

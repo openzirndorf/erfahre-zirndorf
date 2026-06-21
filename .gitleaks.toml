@@ -1,0 +1,5 @@
+[allowlist]
+description = "Beispielwerte in Dokumentation"
+paths = [
+  "README.md",
+]

@@ -1,13 +1,19 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, field_validator
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_admin_user, get_current_user
 from database import get_db
 from models import Suggestion, User
+
+limiter = Limiter(key_func=get_remote_address)
+
+_IMAGE_MAX_BYTES = 1 * 1024 * 1024  # 1 MB base64-encoded
 
 router = APIRouter(prefix="/api/suggestions", tags=["suggestions"])
 
@@ -20,6 +26,13 @@ class SuggestionCreate(BaseModel):
     lat: float | None = None
     lon: float | None = None
     image_base64: str | None = None
+
+    @field_validator("image_base64")
+    @classmethod
+    def limit_image_size(cls, v: str | None) -> str | None:
+        if v and len(v.encode()) > _IMAGE_MAX_BYTES:
+            raise ValueError("Bild zu groß (max. 1 MB)")
+        return v
 
 
 class SuggestionOut(BaseModel):
@@ -40,7 +53,9 @@ class MySuggestionOut(BaseModel):
 
 
 @router.post("", status_code=201)
+@limiter.limit("10/hour")
 async def create_suggestion(
+    request: Request,
     body: SuggestionCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
