@@ -32,9 +32,9 @@ const MARKER_STYLE: Record<MarkerState, { bg: string; border: string; text: stri
   done:           { bg: "#009a00", border: "#007a00", text: "#fff",    label: "✓" },
   open:           { bg: "#fff",    border: "#009a00", text: "#009a00", label: "🚴" },
   mystery:        { bg: "#fff",    border: "#7c3aed", text: "#7c3aed", label: "🧙" },
-  "mystery-done": { bg: "#fff",    border: "#7c3aed", text: "#7c3aed", label: "✓" },
+  "mystery-done": { bg: "#7c3aed", border: "#5b21b6", text: "#fff",    label: "✓" },
   task:           { bg: "#fff",    border: "#dc2626", text: "#dc2626", label: "🚴" },
-  "task-done":    { bg: "#fff",    border: "#dc2626", text: "#dc2626", label: "✓" },
+  "task-done":    { bg: "#dc2626", border: "#991b1b", text: "#fff",    label: "✓" },
 };
 
 function ChallengeOverlay({
