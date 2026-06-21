@@ -526,7 +526,7 @@ export function AdminPage() {
         <Shield className="w-5 h-5" style={{ color: "var(--oz-brand-green)" }} />
         Admin
       </h1>
-      <p className="text-xs text-gray-400 mb-4">Erfahre Zirndorf – Verwaltung</p>
+      <p className="text-xs text-gray-400 mb-4">Erfahre Zirndorf – Verwaltung · deploy-test-ok</p>
 
       {/* Tabs */}
       <div className="grid grid-cols-3 rounded-xl bg-gray-100 p-1 mb-6 gap-1">
