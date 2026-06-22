@@ -24,6 +24,10 @@ const SPONSORS: Sponsor[] = [
     description: "Frische Döner und türkische Küche mitten in Zirndorf.",
   },
   {
+    name: "AusdruckD!",
+    description: "Kreative Ideen aus Zirndorf – 3D-Druck, Lasergravur und individuelle Anfertigungen.",
+  },
+  {
     name: "helpi",
     description: "Ausrüster für Hilfsorganisationen & Polizei – Feuerwehrausrüstung, Brandschutz und Erste-Hilfe-Bedarf.",
   },
