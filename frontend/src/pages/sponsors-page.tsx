@@ -35,6 +35,10 @@ const SPONSORS: Sponsor[] = [
     name: "Hotel Knorz",
     description: "Familiär geführtes Hotel mitten in Zirndorf – Übernachten, wo die Stadt zu Hause ist.",
   },
+  {
+    name: "Lennert Papeterie & mehr",
+    description: "Schreibwaren, Schulbedarf und Geschenkartikel: eine feste Adresse in Zirndorf.",
+  },
 ];
 
 export function SponsorsPage() {
@@ -60,13 +64,21 @@ export function SponsorsPage() {
           </div>
           <p className="text-sm opacity-90">
             Die Bestplatzierten erhalten am Ende der Aktion sichere Preise. Zusätzlich werden
-            unter allen Teilnehmerinnen und Teilnehmern weitere Preise verlost – je mehr Orte
-            du besuchst, desto größer deine Gewinnchance.
+            unter allen Teilnehmerinnen und Teilnehmern mit mindestens 100 Punkten weitere Preise verlost.
           </p>
         </div>
 
         {SPONSORS.length > 0 ? (
           <div className="space-y-3">
+            <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
+              <h2 className="font-bold text-base mb-2" style={{ fontFamily: "var(--oz-font-heading)" }}>
+                Danke!
+              </h2>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Diese Aktion lebt von der Unterstützung lokaler Betriebe und Einrichtungen.
+                Herzlichen Dank an alle Sponsoren, die Erfahre Zirndorf mit Preisen und Engagement möglich machen.
+              </p>
+            </div>
             <h2 className="font-bold text-base" style={{ fontFamily: "var(--oz-font-heading)" }}>
               Unsere Sponsoren
             </h2>
