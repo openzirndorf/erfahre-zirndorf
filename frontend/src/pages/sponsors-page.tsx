@@ -39,6 +39,11 @@ const SPONSORS: Sponsor[] = [
     name: "Lennert Papeterie & mehr",
     description: "Schreibwaren, Schulbedarf und Geschenkartikel: eine feste Adresse in Zirndorf.",
   },
+  {
+    name: "Der Steinbock – Boulderhalle Zirndorf",
+    description: "Bouldern in einer alten Spielzeugfabrik: Kletterfläche innen und außen und Café direkt in der Innenstadt.",
+    url: "https://www.dersteinbock-zirndorf.de/",
+  },
 ];
 
 export function SponsorsPage() {
