@@ -1,6 +1,7 @@
 export interface FaqEntry {
   question: string;
   answer: string;
+  steps?: string[];
   link?: {
     label: string;
     to: string;
@@ -33,6 +34,17 @@ const faq: FaqEntry[] = [
     question: "Wie funktioniert der Check-in?",
     answer:
       'Öffne einen Ort oder tippe einen Punkt auf der Karte an, fahr hin und tippe auf "Jetzt einchecken". Die App ruft einmalig deinen GPS-Standort ab und prüft die Entfernung zum Ziel. Bei manchen Orten gibt es zusätzlich eine Quizfrage, die du vor Ort beantworten musst. Bei Erfolg bekommst du Punkte. Jeden Ort kannst du einmal einchecken.',
+  },
+  {
+    question: "Mein GPS ist zu ungenau – was kann ich tun?",
+    answer:
+      "Schlechtes GPS-Signal ist der häufigste Grund für einen fehlgeschlagenen Check-in. Diese Schritte helfen meistens:",
+    steps: [
+      'Einstellungen → Standort → „Google-Standortgenauigkeit“ aktivieren (falls nicht schon an)',
+      "Cache leeren: Einstellungen → Apps → Chrome (oder dein Browser) → Speicher → Cache leeren, dann App neu starten",
+      'GPS testen: „GPS Status & Toolbox“ aus dem Play Store installieren und prüfen, ob mindestens 4–6 Satelliten empfangen werden',
+      "Pixel-Tipp: Flugmodus kurz ein- und wieder ausschalten – das kalibriert das GPS neu",
+    ],
   },
   {
     question: "Was passiert mit meinem Standort?",

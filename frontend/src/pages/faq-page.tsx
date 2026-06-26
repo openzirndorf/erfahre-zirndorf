@@ -5,7 +5,7 @@ import { OzFooter } from "../components/oz-footer";
 import faqData from "../faq";
 import type { FaqEntry } from "../faq";
 
-function FaqItem({ question, answer, link }: FaqEntry) {
+function FaqItem({ question, answer, steps, link }: FaqEntry) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border-b border-gray-100 last:border-0">
@@ -23,6 +23,16 @@ function FaqItem({ question, answer, link }: FaqEntry) {
       {open && (
         <div className="pb-4">
           <p className="text-sm text-gray-600 leading-relaxed">{answer}</p>
+          {steps && (
+            <ol className="mt-2 space-y-1.5 text-sm text-gray-600">
+              {steps.map((step, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="shrink-0 font-semibold" style={{ color: "var(--oz-brand-green)" }}>{i + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
           {link && (
             <Link to={link.to} className="mt-2 inline-block text-sm font-semibold underline" style={{ color: "var(--oz-brand-green)" }}>
               {link.label}
