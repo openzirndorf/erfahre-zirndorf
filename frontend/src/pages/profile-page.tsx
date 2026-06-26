@@ -1,6 +1,6 @@
 import { Award, Bike, Copy, LogIn, MapPin, Star, Trash2, UserPlus } from "lucide-react";
 import { ShareButton } from "../components/share-button";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../api/client";
 import { fetchMyProgress } from "../api/client";
@@ -250,6 +250,22 @@ export function ProfilePage() {
             <p className="text-xs text-gray-500 mb-3 leading-relaxed">
               Teile deinen Code – du erhältst <strong>20 Punkte</strong> pro Anmeldung und <strong>40 weitere</strong>, sobald dein Geworbener 100 Punkte erreicht.
             </p>
+            {(progress.referrals_registered ?? 0) > 0 && (
+              <div className="flex gap-3 mb-3">
+                <div className="flex-1 rounded-xl p-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
+                  <p className="text-lg font-black" style={{ fontFamily: "var(--oz-font-heading)", color: "var(--oz-brand-green)" }}>
+                    {progress.referrals_registered}
+                  </p>
+                  <p className="text-xs text-gray-500">eingeladen (+{(progress.referrals_registered ?? 0) * 20} Pkt.)</p>
+                </div>
+                <div className="flex-1 rounded-xl p-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
+                  <p className="text-lg font-black" style={{ fontFamily: "var(--oz-font-heading)", color: "var(--oz-brand-green)" }}>
+                    {progress.referrals_milestone}
+                  </p>
+                  <p className="text-xs text-gray-500">× 100 Pkt. (+{(progress.referrals_milestone ?? 0) * 40} Pkt.)</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2 rounded-xl p-3" style={{ background: "var(--oz-brand-green-light)" }}>
               <span className="flex-1 font-mono font-bold tracking-widest text-center text-gray-800 text-sm">
                 {progress.referral_code}

@@ -90,6 +90,8 @@ export interface UserProgress {
   checkin_count: number;
   badges: BadgeInfo[];
   referral_code?: string | null;
+  referrals_registered?: number;
+  referrals_milestone?: number;
 }
 
 export interface AuthState {

@@ -28,6 +28,8 @@ class UserProgress(BaseModel):
     checkin_count: int
     badges: list[BadgeOut]
     referral_code: str | None = None
+    referrals_registered: int = 0
+    referrals_milestone: int = 0
 
 
 @router.get("/me/progress", response_model=UserProgress)
@@ -61,6 +63,14 @@ async def my_progress(
         for ub, b in badge_rows
     ]
 
+    referrals_result = await db.execute(
+        select(
+            func.count().label("total"),
+            func.count().filter(User.referral_milestone_paid == True).label("milestone"),  # noqa: E712
+        ).where(User.referred_by_user_id == current_user.id)
+    )
+    referrals_row = referrals_result.one()
+
     return UserProgress(
         user_id=current_user.id,
         display_name=current_user.display_name,
@@ -68,6 +78,8 @@ async def my_progress(
         checkin_count=checkin_count + current_user.manual_checkin_count,
         badges=badges,
         referral_code=current_user.referral_code,
+        referrals_registered=referrals_row.total,
+        referrals_milestone=referrals_row.milestone,
     )
 
 
