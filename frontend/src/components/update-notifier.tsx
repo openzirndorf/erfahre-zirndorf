@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 
-const STORAGE_KEY = "notifier_v2_dismissed";
+const STORAGE_KEY = "notifier_v3_dismissed";
 
 export function useUpdateNotifier() {
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(STORAGE_KEY) === "1");
@@ -45,26 +45,22 @@ export function UpdateNotifier({ onDone }: Props) {
           </p>
         </div>
 
-        <p className="font-semibold text-gray-800">Vielen Dank für euer super Feedback! Folgende Ideen konnten wir bereits umsetzen:</p>
+        <p className="font-semibold text-gray-800">Neu in dieser Version:</p>
 
         <div className="space-y-2">
           <div className="flex gap-2">
             <span className="shrink-0">✅</span>
-            <p>Der <span className="font-semibold">Frühstart-Bonus</span> gilt ab jetzt nicht mehr nur für den ersten Tag, sondern für die <span className="font-semibold">ersten beiden Tage</span>!</p>
-          </div>
-          <div className="flex gap-2">
-            <span className="shrink-0">✅</span>
-            <p>Neuer <span className="font-semibold">„Vorschlagen"-Bereich</span>: Registrierte User können ab jetzt unkompliziert Vorschläge für Stops, Sponsoren oder generelle Ideen einreichen 💡</p>
+            <p><span className="font-semibold">„Vorschlagen"-Bereich</span>: Stops, Sponsoren, Ideen – und jetzt auch <span className="font-semibold">Support-Anfragen</span> direkt aus der App einreichen 💡</p>
           </div>
         </div>
 
-        <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5 text-xs text-gray-600">
-          <p className="font-semibold text-gray-700 mb-1">⏳ Ladezeiten zu Rand- & Nachtzeiten</p>
-          <p>
-            Gerade zu Rand- und Nachtzeiten kann die App etwas länger zum Laden brauchen – die Technik im Hintergrund schaltet sich bei Inaktivität automatisch ab, um Kosten zu sparen (die ehrenamtlich von einer Einzelperson getragen werden 🙏).
-          </p>
-          <p className="mt-1.5 font-medium text-gray-700">
-            💡 Tipp: Einfach kurz warten – beim nächsten Aufruf direkt danach läuft alles wieder gewohnt schnell!
+        <div
+          className="rounded-xl px-3 py-3 text-white"
+          style={{ background: "linear-gradient(135deg, var(--oz-brand-green) 0%, #007a00 100%)" }}
+        >
+          <p className="font-bold mb-1">🎁 Freunde einladen & Punkte sammeln</p>
+          <p className="text-xs opacity-90 leading-relaxed">
+            Dein persönlicher Einladungscode wartet im Profil! Wer sich mit deinem Code anmeldet, bringt dir <span className="font-semibold">20 Punkte</span> – und sobald dein Geworbener 100 Punkte erreicht, gibt es nochmal <span className="font-semibold">40 Punkte</span> obendrauf. Bis zu 5 Einladungen möglich.
           </p>
         </div>
       </div>
