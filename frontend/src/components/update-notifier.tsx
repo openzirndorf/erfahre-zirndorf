@@ -40,7 +40,7 @@ export function UpdateNotifier({ onDone }: Props) {
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
           <p className="font-bold text-amber-800 mb-0.5">🏆 Gewinnübergabe</p>
           <p className="text-amber-700 text-xs">
-            Sonntag, 13. Juli · 19:30 Uhr · <span className="font-semibold">Hotel Knorz</span>
+            Montag, 13. Juli · 19:30 Uhr · <span className="font-semibold">Hotel Knorz</span>
             <br />Alle Bestplatzierten und Gewinner werden direkt kontaktiert.
           </p>
         </div>
