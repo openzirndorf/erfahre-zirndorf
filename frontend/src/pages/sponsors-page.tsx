@@ -1,5 +1,5 @@
 import { Gift, Star } from "lucide-react";
-import React from "react";
+
 import { OzFooter } from "../components/oz-footer";
 
 interface Sponsor {
@@ -14,35 +14,52 @@ const SPONSORS: Sponsor[] = [
   {
     name: "Eiscafe Mosena",
     description: "Eiscafe in Zirndorf – für eine süße Auszeit nach dem Check-in.",
+    url: "https://eiscafe-mosena.eatbu.com/",
   },
   {
     name: "Kletterwald Weiherhof",
     description: "Kletterspaß für die ganze Familie direkt vor den Toren Zirndorfs.",
+    url: "https://www.kletterwald-weiherhof.de/",
   },
   {
     name: "NazarDöner Zirndorf",
     description: "Frische Döner und türkische Küche mitten in Zirndorf.",
+    url: "https://nazar-zirndorf.eatbu.com/",
   },
   {
     name: "AusdruckD!",
     description: "Kreative Ideen aus Zirndorf – 3D-Druck, Lasergravur und individuelle Anfertigungen.",
+    url: "https://www.ausdruckd.de/",
   },
   {
     name: "helpi",
     description: "Ausrüster für Hilfsorganisationen & Polizei – Feuerwehrausrüstung, Brandschutz und Erste-Hilfe-Bedarf.",
+    url: "https://www.helpishop.de/",
   },
   {
     name: "Hotel Knorz",
     description: "Familiär geführtes Hotel mitten in Zirndorf – Übernachten, wo die Stadt zu Hause ist.",
+    url: "https://www.hotelknorz.de/",
   },
   {
     name: "Lennert Papeterie & mehr",
     description: "Schreibwaren, Schulbedarf und Geschenkartikel: eine feste Adresse in Zirndorf.",
+    url: "https://lennert.de/",
   },
   {
     name: "Der Steinbock – Boulderhalle Zirndorf",
     description: "Bouldern in einer alten Spielzeugfabrik: Kletterfläche innen und außen und Café direkt in der Innenstadt.",
     url: "https://www.dersteinbock-zirndorf.de/",
+  },
+  {
+    name: "Röst Kaffee",
+    description: "Specialty-Kaffee aus eigener Röstung – Röst Kaffee in Oberasbach für Espresso-Fans, mit Barista-Kursen und Kaffeeverkostungen.",
+    url: "https://roestkaffee.de/",
+  },
+  {
+    name: "Café Eders",
+    description: "Café zum Wohlfühlen – hausgemachte Köstlichkeiten, frischer Kaffee und Frühstücksbuffet am Wochenende.",
+    url: "https://cafe-eders.de/",
   },
 ];
 
