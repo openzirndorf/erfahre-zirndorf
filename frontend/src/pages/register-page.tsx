@@ -12,6 +12,13 @@ function getTokenFromHash(): string | null {
   return new URLSearchParams(hash.slice(qIndex + 1)).get("token");
 }
 
+function getReferralCodeFromHash(): string {
+  const hash = window.location.hash;
+  const qIndex = hash.indexOf("?");
+  if (qIndex === -1) return "";
+  return new URLSearchParams(hash.slice(qIndex + 1)).get("ref") ?? "";
+}
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -23,6 +30,7 @@ export function RegisterPage() {
   const [devCode, setDevCode] = useState<string | null>(null);
   const [loginCode, setLoginCode] = useState("");
   const [sent, setSent] = useState(false);
+  const [referralCode, setReferralCode] = useState(getReferralCodeFromHash);
 
   useEffect(() => {
     const token = getTokenFromHash();
@@ -46,7 +54,7 @@ export function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await requestMagicLink(email, displayName.trim(), acceptedRules, undefined, acceptedRules);
+      const res = await requestMagicLink(email, displayName.trim(), acceptedRules, undefined, acceptedRules, referralCode.trim() || undefined);
       if (res.dev_token) setDevToken(res.dev_token);
       if (res.dev_code) setDevCode(res.dev_code);
       setSent(true);
@@ -168,6 +176,21 @@ export function RegisterPage() {
               className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
               placeholder={email.includes("@") ? email.split("@")[0] : "z. B. Radler90513"} />
             <p className="text-xs text-gray-500 mt-1">So erscheinst du in der Rangliste.</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1.5">
+              Einladungscode <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              maxLength={8}
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base font-mono tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="z. B. AB3C7DE"
+            />
+            <p className="text-xs text-gray-500 mt-1">Falls dich jemand eingeladen hat, gib hier den Code ein.</p>
           </div>
 
           <label className="flex items-start gap-3 cursor-pointer rounded-xl bg-gray-50 p-3">

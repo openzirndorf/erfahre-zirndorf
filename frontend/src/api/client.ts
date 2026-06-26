@@ -65,11 +65,12 @@ export async function requestMagicLink(
   consent: boolean,
   altcha?: string,
   fairPlay?: boolean,
+  referralCode?: string,
 ): Promise<{ message: string; dev_token?: string; dev_code?: string }> {
   try {
     return await request("/auth/request-magic-link", {
       method: "POST",
-      body: JSON.stringify({ email, display_name: displayName ?? null, consent, altcha, fair_play: fairPlay ?? false }),
+      body: JSON.stringify({ email, display_name: displayName ?? null, consent, altcha, fair_play: fairPlay ?? false, referral_code: referralCode ?? null }),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "";

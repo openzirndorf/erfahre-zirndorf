@@ -77,6 +77,20 @@ async def award_badges(db: AsyncSession, user: User) -> list[Badge]:
     return newly_awarded
 
 
+async def check_referral_milestone(db: AsyncSession, user: User) -> bool:
+    """Awards 40 points to the referrer when the referred user first crosses 100 points."""
+    if not user.referred_by_user_id or user.referral_milestone_paid or user.points < 100:
+        return False
+    referrer = (await db.execute(
+        select(User).where(User.id == user.referred_by_user_id)
+    )).scalar_one_or_none()
+    if not referrer:
+        return False
+    user.referral_milestone_paid = True
+    referrer.points += 40
+    return True
+
+
 async def _check_streak(db: AsyncSession, user_id: int, required_days: int) -> bool:
     today = datetime.now(UTC).date()
     streak = 0

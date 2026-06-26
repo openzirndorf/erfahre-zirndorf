@@ -1,4 +1,4 @@
-import { Award, Bike, LogIn, MapPin, Star, Trash2 } from "lucide-react";
+import { Award, Bike, Copy, LogIn, MapPin, Star, Trash2, UserPlus } from "lucide-react";
 import { ShareButton } from "../components/share-button";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -57,6 +57,7 @@ export function ProfilePage() {
   );
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const auth = getAuth();
 
   async function handleDeleteAccount() {
@@ -239,6 +240,38 @@ export function ProfilePage() {
           text={`Ich habe schon ${progress.checkin_count} Orte bei Erfahre Zirndorf per Rad besucht! 🚴 ${progress.points} Punkte`}
           compact={false}
         />
+
+        {progress.referral_code && (
+          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
+            <h2 className="font-bold text-base mb-1 flex items-center gap-2" style={{ fontFamily: "var(--oz-font-heading)" }}>
+              <UserPlus className="w-4 h-4" style={{ color: "var(--oz-brand-green)" }} />
+              Freunde einladen
+            </h2>
+            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+              Teile deinen Code – du erhältst <strong>20 Punkte</strong> pro Anmeldung und <strong>40 weitere</strong>, sobald dein Geworbener 100 Punkte erreicht.
+            </p>
+            <div className="flex items-center gap-2 rounded-xl p-3" style={{ background: "var(--oz-brand-green-light)" }}>
+              <span className="flex-1 font-mono font-bold tracking-widest text-center text-gray-800 text-sm">
+                {progress.referral_code}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}#/registrieren?ref=${progress.referral_code}`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  });
+                }}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white shrink-0 transition-colors"
+                style={{ background: copied ? "#007a00" : "var(--oz-brand-green)" }}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {copied ? "Kopiert!" : "Link kopieren"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Einstellungen */}
         <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>

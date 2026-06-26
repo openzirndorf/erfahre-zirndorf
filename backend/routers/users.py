@@ -27,6 +27,7 @@ class UserProgress(BaseModel):
     points: int
     checkin_count: int
     badges: list[BadgeOut]
+    referral_code: str | None = None
 
 
 @router.get("/me/progress", response_model=UserProgress)
@@ -66,6 +67,7 @@ async def my_progress(
         points=current_user.points,
         checkin_count=checkin_count + current_user.manual_checkin_count,
         badges=badges,
+        referral_code=current_user.referral_code,
     )
 
 

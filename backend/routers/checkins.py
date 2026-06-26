@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from auth import get_current_user
-from checkin_logic import already_checked_in_today, award_badges, haversine
+from checkin_logic import already_checked_in_today, award_badges, check_referral_milestone, haversine
 from config import settings
 from database import get_db
 from models import Challenge, CheckIn, QuizAttempt, User
@@ -57,6 +57,7 @@ class CheckInResponse(BaseModel):
     distance_m: float | None = None
     is_flagged: bool = False
     attempts_left: int | None = None
+    referral_milestone_triggered: bool = False
 
 
 async def _count_successful_checkins(db: AsyncSession, challenge_id: int) -> int:
@@ -306,6 +307,7 @@ async def submit_checkin(
 
     await db.flush()
     new_badges = await award_badges(db, current_user)
+    referral_milestone_triggered = await check_referral_milestone(db, current_user)
 
     return CheckInResponse(
         success=True,
@@ -315,6 +317,7 @@ async def submit_checkin(
         badges_unlocked=[BadgeOut.model_validate(b) for b in new_badges],
         distance_m=round(distance),
         is_flagged=is_flagged,
+        referral_milestone_triggered=referral_milestone_triggered,
     )
 
 

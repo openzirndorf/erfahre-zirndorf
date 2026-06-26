@@ -23,6 +23,7 @@ class PendingMagicLink(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
     consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    referral_code_used: Mapped[str | None] = mapped_column(String(8), nullable=True)
 
 
 class UserRole(str, enum.Enum):
@@ -56,6 +57,9 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
     points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     manual_checkin_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    referral_code: Mapped[str | None] = mapped_column(String(8), unique=True, nullable=True, index=True)
+    referred_by_user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    referral_milestone_paid: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     checkins: Mapped[list["CheckIn"]] = relationship("CheckIn", back_populates="user")
     badges: Mapped[list["UserBadge"]] = relationship("UserBadge", back_populates="user")

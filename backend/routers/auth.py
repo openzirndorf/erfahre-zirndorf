@@ -22,6 +22,7 @@ DisplayName = Annotated[str, StringConstraints(min_length=2, max_length=50, stri
 
 _GENERIC_SENT = {"message": "Magic Link wurde gesendet"}
 _LOGIN_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+_REFERRAL_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
 
 def _normalize_login_code(value: str) -> str:
@@ -45,6 +46,18 @@ async def _generate_login_code(db: AsyncSession) -> str:
     )
 
 
+async def _generate_referral_code(db: AsyncSession) -> str:
+    for _ in range(10):
+        code = "".join(secrets.choice(_REFERRAL_CODE_ALPHABET) for _ in range(7))
+        existing = (await db.execute(select(User).where(User.referral_code == code))).scalar_one_or_none()
+        if not existing:
+            return code
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Referral-Code konnte nicht erzeugt werden.",
+    )
+
+
 
 
 class MagicLinkRequest(BaseModel):
@@ -52,6 +65,7 @@ class MagicLinkRequest(BaseModel):
     display_name: DisplayName | None = None  # nur für Erstregistrierung erforderlich
     consent: bool = False
     fair_play: bool = False
+    referral_code: str | None = None
 
 
 class VerifyRequest(BaseModel):
@@ -165,6 +179,7 @@ async def request_magic_link(
             login_code=login_code,
             expires_at=expires,
             consent=body.consent,
+            referral_code_used=body.referral_code.upper().strip() if body.referral_code else None,
         ))
 
     await send_magic_link(body.email, token, login_code)
@@ -241,14 +256,27 @@ async def verify_magic_link(
             raise invalid_exc
 
         # Jetzt erst den User anlegen
+        new_referral_code = await _generate_referral_code(db)
         user = User(
             email=pending.email,
             display_name=pending.display_name,
             consent_given=pending.consent,
+            referral_code=new_referral_code,
         )
         db.add(user)
+
+        referral_code_used = pending.referral_code_used
         await db.delete(pending)
         await db.flush()
+
+        # Referral: 20 Punkte für den Werber bei erfolgreicher Registrierung
+        if referral_code_used:
+            referrer = (await db.execute(
+                select(User).where(User.referral_code == referral_code_used)
+            )).scalar_one_or_none()
+            if referrer and referrer.id != user.id:
+                user.referred_by_user_id = referrer.id
+                referrer.points += 20
 
     # ── Auto-Admin ───────────────────────────────────────────────────────
     if (

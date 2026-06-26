@@ -72,6 +72,7 @@ export interface CheckInResponse {
   distance_m: number | null;
   is_flagged: boolean;
   attempts_left?: number | null;
+  referral_milestone_triggered?: boolean;
 }
 
 export interface UserRankEntry {
@@ -88,6 +89,7 @@ export interface UserProgress {
   points: number;
   checkin_count: number;
   badges: BadgeInfo[];
+  referral_code?: string | null;
 }
 
 export interface AuthState {

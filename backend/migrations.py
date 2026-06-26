@@ -20,10 +20,21 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
         await conn.execute(text("ALTER TABLE users ADD COLUMN magic_login_code VARCHAR"))
         await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_magic_login_code ON users (magic_login_code)"))
 
+    if "referral_code" not in user_columns:
+        await conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR(8)"))
+        await conn.execute(text("UPDATE users SET referral_code = upper(left(md5(id::text || 'ref26'), 7)) WHERE referral_code IS NULL"))
+        await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code) WHERE referral_code IS NOT NULL"))
+    if "referred_by_user_id" not in user_columns:
+        await conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_user_id INTEGER REFERENCES users(id)"))
+    if "referral_milestone_paid" not in user_columns:
+        await conn.execute(text("ALTER TABLE users ADD COLUMN referral_milestone_paid BOOLEAN NOT NULL DEFAULT false"))
+
     pending_columns = await conn.run_sync(existing_columns, "pending_magic_links")
     if "login_code" not in pending_columns:
         await conn.execute(text("ALTER TABLE pending_magic_links ADD COLUMN login_code VARCHAR"))
         await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_pending_magic_links_login_code ON pending_magic_links (login_code)"))
+    if "referral_code_used" not in pending_columns:
+        await conn.execute(text("ALTER TABLE pending_magic_links ADD COLUMN referral_code_used VARCHAR(8)"))
 
     challenge_columns = await conn.run_sync(existing_columns, "challenges")
     if "is_mystery" not in challenge_columns:
