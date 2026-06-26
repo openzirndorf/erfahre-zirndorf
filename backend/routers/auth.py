@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, StringConstraints
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import blocked_detail, create_jwt
@@ -269,14 +269,18 @@ async def verify_magic_link(
         await db.delete(pending)
         await db.flush()
 
-        # Referral: 20 Punkte für den Werber bei erfolgreicher Registrierung
+        # Referral: 20 Punkte für den Werber bei erfolgreicher Registrierung (max. 5 Geworbene)
         if referral_code_used:
             referrer = (await db.execute(
                 select(User).where(User.referral_code == referral_code_used)
             )).scalar_one_or_none()
             if referrer and referrer.id != user.id:
-                user.referred_by_user_id = referrer.id
-                referrer.points += 20
+                referral_count = (await db.execute(
+                    select(func.count()).where(User.referred_by_user_id == referrer.id)
+                )).scalar_one()
+                if referral_count < 5:
+                    user.referred_by_user_id = referrer.id
+                    referrer.points += 20
 
     # ── Auto-Admin ───────────────────────────────────────────────────────
     if (

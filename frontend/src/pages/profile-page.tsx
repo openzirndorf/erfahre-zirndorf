@@ -1,4 +1,4 @@
-import { Award, Bike, Copy, LogIn, MapPin, Star, Trash2, UserPlus } from "lucide-react";
+import { Award, Bike, Copy, ExternalLink, LogIn, MapPin, MessageCircle, Star, Trash2, UserPlus } from "lucide-react";
 import { ShareButton } from "../components/share-button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -57,7 +57,8 @@ export function ProfilePage() {
   );
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const auth = getAuth();
 
   async function handleDeleteAccount() {
@@ -241,53 +242,94 @@ export function ProfilePage() {
           compact={false}
         />
 
-        {progress.referral_code && (
-          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
-            <h2 className="font-bold text-base mb-1 flex items-center gap-2" style={{ fontFamily: "var(--oz-font-heading)" }}>
-              <UserPlus className="w-4 h-4" style={{ color: "var(--oz-brand-green)" }} />
-              Freunde einladen
-            </h2>
-            <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-              Teile deinen Code – du erhältst <strong>20 Punkte</strong> pro Anmeldung und <strong>40 weitere</strong>, sobald dein Geworbener 100 Punkte erreicht.
-            </p>
-            {(progress.referrals_registered ?? 0) > 0 && (
-              <div className="flex gap-3 mb-3">
-                <div className="flex-1 rounded-xl p-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
-                  <p className="text-lg font-black" style={{ fontFamily: "var(--oz-font-heading)", color: "var(--oz-brand-green)" }}>
-                    {progress.referrals_registered}
-                  </p>
-                  <p className="text-xs text-gray-500">eingeladen (+{(progress.referrals_registered ?? 0) * 20} Pkt.)</p>
+        {progress.referral_code && (() => {
+          const referralUrl = `${window.location.origin}${window.location.pathname}#/registrieren?ref=${progress.referral_code}`;
+          const limitReached = (progress.referrals_registered ?? 0) >= 5;
+          return (
+            <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
+              <h2 className="font-bold text-base mb-1 flex items-center gap-2" style={{ fontFamily: "var(--oz-font-heading)" }}>
+                <UserPlus className="w-4 h-4" style={{ color: "var(--oz-brand-green)" }} />
+                Freunde einladen
+              </h2>
+
+              {limitReached ? (
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  Du hast das Maximum von <strong>5 Einladungen</strong> erreicht. Super gemacht!
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  Teile deinen Code – du erhältst <strong>20 Punkte</strong> pro Anmeldung und <strong>40 weitere</strong>, sobald dein Geworbener 100 Punkte erreicht. Maximal 5 Einladungen.
+                </p>
+              )}
+
+              {(progress.referrals_registered ?? 0) > 0 && (
+                <div className="flex gap-3 mb-3">
+                  <div className="flex-1 rounded-xl p-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
+                    <p className="text-lg font-black" style={{ fontFamily: "var(--oz-font-heading)", color: "var(--oz-brand-green)" }}>
+                      {progress.referrals_registered}/5
+                    </p>
+                    <p className="text-xs text-gray-500">eingeladen (+{(progress.referrals_registered ?? 0) * 20} Pkt.)</p>
+                  </div>
+                  <div className="flex-1 rounded-xl p-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
+                    <p className="text-lg font-black" style={{ fontFamily: "var(--oz-font-heading)", color: "var(--oz-brand-green)" }}>
+                      {progress.referrals_milestone}
+                    </p>
+                    <p className="text-xs text-gray-500">× 100 Pkt. (+{(progress.referrals_milestone ?? 0) * 40} Pkt.)</p>
+                  </div>
                 </div>
-                <div className="flex-1 rounded-xl p-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
-                  <p className="text-lg font-black" style={{ fontFamily: "var(--oz-font-heading)", color: "var(--oz-brand-green)" }}>
-                    {progress.referrals_milestone}
-                  </p>
-                  <p className="text-xs text-gray-500">× 100 Pkt. (+{(progress.referrals_milestone ?? 0) * 40} Pkt.)</p>
-                </div>
+              )}
+
+              <div className="rounded-xl p-3 mb-3 text-center" style={{ background: "var(--oz-brand-green-light)" }}>
+                <span className="font-mono font-bold tracking-widest text-gray-800 text-base">
+                  {progress.referral_code}
+                </span>
               </div>
-            )}
-            <div className="flex items-center gap-2 rounded-xl p-3" style={{ background: "var(--oz-brand-green-light)" }}>
-              <span className="flex-1 font-mono font-bold tracking-widest text-center text-gray-800 text-sm">
-                {progress.referral_code}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const url = `${window.location.origin}${window.location.pathname}#/registrieren?ref=${progress.referral_code}`;
-                  navigator.clipboard.writeText(url).then(() => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  });
-                }}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white shrink-0 transition-colors"
-                style={{ background: copied ? "#007a00" : "var(--oz-brand-green)" }}
-              >
-                <Copy className="w-3.5 h-3.5" />
-                {copied ? "Kopiert!" : "Link kopieren"}
-              </button>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(progress.referral_code!).then(() => {
+                      setCopiedCode(true);
+                      setTimeout(() => setCopiedCode(false), 2000);
+                    });
+                  }}
+                  className="flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 text-xs font-semibold transition-colors"
+                  style={{ background: copiedCode ? "#007a00" : "var(--oz-brand-green)", color: "white" }}
+                >
+                  <Copy className="w-4 h-4" />
+                  {copiedCode ? "Kopiert!" : "Code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(referralUrl).then(() => {
+                      setCopiedLink(true);
+                      setTimeout(() => setCopiedLink(false), 2000);
+                    });
+                  }}
+                  className="flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 text-xs font-semibold transition-colors"
+                  style={{ background: copiedLink ? "#007a00" : "var(--oz-brand-green)", color: "white" }}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {copiedLink ? "Kopiert!" : "Link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = encodeURIComponent(`Entdecke Zirndorf mit dem Rad! 🚴 Mach bei "Erfahre Zirndorf" mit – hier ist mein Einladungslink: ${referralUrl}`);
+                    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener");
+                  }}
+                  className="flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 text-xs font-semibold text-white transition-colors"
+                  style={{ background: "#25D366" }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  WhatsApp
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Einstellungen */}
         <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>

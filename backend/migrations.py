@@ -9,6 +9,10 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
         inspector = inspect(sync_conn)
         return {c["name"] for c in inspector.get_columns(table_name)}
 
+    def get_dialect_name(sync_conn) -> str:
+        return sync_conn.dialect.name
+
+    is_postgres = (await conn.run_sync(get_dialect_name)) == "postgresql"
     user_columns = await conn.run_sync(existing_columns, "users")
     if "manual_checkin_count" not in user_columns:
         await conn.execute(text("ALTER TABLE users ADD COLUMN manual_checkin_count INTEGER NOT NULL DEFAULT 0"))
@@ -22,7 +26,10 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
 
     if "referral_code" not in user_columns:
         await conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR(8)"))
-        await conn.execute(text("UPDATE users SET referral_code = upper(left(md5(id::text || 'ref26'), 7)) WHERE referral_code IS NULL"))
+        if is_postgres:
+            await conn.execute(text("UPDATE users SET referral_code = upper(left(md5(id::text || 'ref26'), 7)) WHERE referral_code IS NULL"))
+        else:
+            await conn.execute(text("UPDATE users SET referral_code = upper(hex(randomblob(4))) WHERE referral_code IS NULL"))
         await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code) WHERE referral_code IS NOT NULL"))
     if "referred_by_user_id" not in user_columns:
         await conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_user_id INTEGER REFERENCES users(id)"))
