@@ -69,6 +69,9 @@ interface AdminUser {
   is_blocked: boolean;
   blocked_reason: string | null;
   created_at: string;
+  referral_code?: string | null;
+  referred_by_display_name?: string | null;
+  referrals_count?: number;
 }
 
 interface FlaggedCheckIn {
@@ -903,9 +906,20 @@ export function AdminPage() {
                       <div className="min-w-0">
                         <p className="font-bold text-sm truncate">{user.display_name}</p>
                         <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        {(user.referral_code || user.referred_by_display_name || (user.referrals_count ?? 0) > 0) && (
+                          <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+                            {user.referral_code && <span className="font-mono">{user.referral_code}</span>}
+                            {user.referred_by_display_name && (
+                              <span> · Geworben von <span className="font-semibold text-gray-600">{user.referred_by_display_name}</span></span>
+                            )}
+                            {(user.referrals_count ?? 0) > 0 && (
+                              <span> · {user.referrals_count} Einladung{user.referrals_count !== 1 ? "en" : ""}</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${user.is_blocked ? "bg-red-100 text-red-700" : user.role === "admin" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${user.is_blocked ? "bg-red-100 text-red-700" : user.role === "admin" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
                       >
                         {user.is_blocked ? "gesperrt" : user.role === "admin" ? "Admin" : "Teilnehmer"}
                       </span>

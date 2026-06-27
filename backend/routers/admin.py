@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_serializer
 from sqlalchemy import and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 from auth import get_admin_user
 from config import settings
 from database import get_db
@@ -158,6 +158,9 @@ class UserOut(BaseModel):
     is_blocked: bool
     blocked_reason: str | None
     created_at: datetime
+    referral_code: str | None = None
+    referred_by_display_name: str | None = None
+    referrals_count: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -513,16 +516,38 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     _admin: User = Depends(get_admin_user),
 ):
+    ReferrerAlias = aliased(User, name="referrer_alias")
     rows = (await db.execute(
-        select(User, func.count(CheckIn.id).label("checkin_count"))
+        select(
+            User,
+            func.count(CheckIn.id).label("checkin_count"),
+            ReferrerAlias.display_name.label("referred_by_display_name"),
+        )
         .outerjoin(CheckIn, (CheckIn.user_id == User.id) & (CheckIn.success == True))  # noqa: E712
-        .group_by(User.id)
+        .outerjoin(ReferrerAlias, ReferrerAlias.id == User.referred_by_user_id)
+        .group_by(User.id, ReferrerAlias.display_name)
         .order_by(User.created_at.desc())
         .limit(200)
     )).all()
+
+    user_ids = [u.id for u, _, _ in rows]
+    referrals_map: dict[int, int] = {}
+    if user_ids:
+        for r in (await db.execute(
+            select(User.referred_by_user_id, func.count().label("cnt"))
+            .where(User.referred_by_user_id.in_(user_ids))
+            .group_by(User.referred_by_user_id)
+        )).all():
+            referrals_map[r.referred_by_user_id] = r.cnt
+
     return [
-        UserOut(**{c: getattr(u, c) for c in User.__table__.columns.keys()}, checkin_count=cnt)
-        for u, cnt in rows
+        UserOut(
+            **{col: getattr(u, col) for col in User.__table__.columns.keys()},
+            checkin_count=cnt,
+            referred_by_display_name=ref_name,
+            referrals_count=referrals_map.get(u.id, 0),
+        )
+        for u, cnt, ref_name in rows
     ]
 
 
@@ -536,6 +561,15 @@ async def user_detail(
     user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Nutzer nicht gefunden")
+
+    referrer_name: str | None = None
+    if user.referred_by_user_id:
+        referrer_name = (await db.execute(
+            select(User.display_name).where(User.id == user.referred_by_user_id)
+        )).scalar_one_or_none()
+    referrals_count = (await db.execute(
+        select(func.count()).where(User.referred_by_user_id == user_id)
+    )).scalar_one()
 
     checkins_result = await db.execute(
         select(CheckIn)
@@ -558,8 +592,14 @@ async def user_detail(
         .limit(50)
     )
 
+    checkins = checkins_result.scalars().all()
     return UserDetailOut(
-        user=UserOut.model_validate(user),
+        user=UserOut(
+            **{col: getattr(user, col) for col in User.__table__.columns.keys()},
+            checkin_count=sum(1 for c in checkins if c.success),
+            referred_by_display_name=referrer_name,
+            referrals_count=referrals_count,
+        ),
         checkins=[
             UserDetailCheckIn(
                 id=c.id,
@@ -573,7 +613,7 @@ async def user_detail(
                 is_flagged=c.is_flagged,
                 flag_reason=c.flag_reason,
             )
-            for c in checkins_result.scalars().all()
+            for c in checkins
         ],
         badges=[
             UserDetailBadge(
