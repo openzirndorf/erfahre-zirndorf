@@ -66,6 +66,7 @@ class ChallengeWithStatus(ChallengeOut):
     user_checked_in: bool = False
     mystery_attempts_left: int | None = None
     photo_submission_status: str | None = None
+    photo_admin_message: str | None = None
 
 
 def _is_active_now(challenge: Challenge) -> bool:
@@ -288,6 +289,7 @@ async def get_challenge(
     checked = False
     mystery_attempts_left: int | None = None
     photo_submission_status: str | None = None
+    photo_admin_message: str | None = None
     if current_user:
         ci_result = await db.execute(
             select(CheckIn).where(
@@ -312,16 +314,20 @@ async def get_challenge(
 
         if challenge.is_photo and checked:
             ps_result = await db.execute(
-                select(PhotoSubmission.status).where(
+                select(PhotoSubmission.status, PhotoSubmission.admin_message).where(
                     PhotoSubmission.user_id == current_user.id,
                     PhotoSubmission.challenge_id == challenge_id,
                 )
             )
-            photo_submission_status = ps_result.scalar_one_or_none()
+            row = ps_result.one_or_none()
+            if row:
+                photo_submission_status = row.status
+                photo_admin_message = row.admin_message if row.status == "rejected" else None
 
     return ChallengeWithStatus(
         **_to_out(challenge, counts.get(challenge_id, 0)).model_dump(),
         user_checked_in=checked,
         mystery_attempts_left=mystery_attempts_left,
         photo_submission_status=photo_submission_status,
+        photo_admin_message=photo_admin_message,
     )

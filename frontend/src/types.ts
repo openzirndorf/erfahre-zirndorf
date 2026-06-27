@@ -31,6 +31,7 @@ export interface Challenge {
   first_day_active: boolean;
   mystery_attempts_left?: number | null;
   photo_submission_status?: "pending" | "approved" | "rejected" | null;
+  photo_admin_message?: string | null;
 }
 
 // Bonuswerte – müssen mit backend/config.py übereinstimmen

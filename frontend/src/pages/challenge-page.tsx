@@ -288,8 +288,13 @@ export function ChallengePage() {
               <Camera className="w-5 h-5 text-red-600" />
               <p className="font-bold text-sm text-red-700">Foto abgelehnt</p>
             </div>
+            {challenge.photo_admin_message && (
+              <p className="text-xs font-semibold text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                {challenge.photo_admin_message}
+              </p>
+            )}
             <p className="text-xs text-red-600 mb-4 leading-relaxed">
-              Dein Foto wurde leider nicht akzeptiert. Du kannst ein neues Foto einreichen.
+              Du kannst ein neues Foto einreichen.
             </p>
             {photoError && <p className="text-xs text-red-600 mb-3">{photoError}</p>}
             <input
