@@ -1,6 +1,6 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
-import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, ExternalLink, LogIn, MapPin, Star, UserPlus, X } from "lucide-react";
+import { AlertTriangle, BookOpen, Camera, CheckCircle2, ClipboardList, ExternalLink, LogIn, MapPin, Star, UserPlus, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchChallenges } from "../api/client";
@@ -15,16 +15,18 @@ function isLoggedIn(): boolean {
   try { return !!localStorage.getItem("auth"); } catch { return false; }
 }
 
-type MarkerState = "done" | "open" | "mystery" | "mystery-done" | "task" | "task-done";
+type MarkerState = "done" | "open" | "mystery" | "mystery-done" | "task" | "task-done" | "photo" | "photo-done";
 
 function markerState(c: Challenge): MarkerState {
   if (c.user_checked_in) {
     if (c.is_mystery) return "mystery-done";
     if (c.is_task) return "task-done";
+    if (c.is_photo) return "photo-done";
     return "done";
   }
   if (c.is_mystery) return "mystery";
   if (c.is_task) return "task";
+  if (c.is_photo) return "photo";
   return "open";
 }
 
@@ -35,6 +37,8 @@ const MARKER_STYLE: Record<MarkerState, { bg: string; border: string; text: stri
   "mystery-done": { bg: "#7c3aed", border: "#5b21b6", text: "#fff",    label: "✓" },
   task:           { bg: "#fff",    border: "#dc2626", text: "#dc2626", label: "🚴" },
   "task-done":    { bg: "#dc2626", border: "#991b1b", text: "#fff",    label: "✓" },
+  photo:          { bg: "#fff",    border: "#1a1a1a", text: "#1a1a1a", label: "📷" },
+  "photo-done":   { bg: "#1a1a1a", border: "#000",    text: "#fff",    label: "✓" },
 };
 
 function ChallengeOverlay({
@@ -274,7 +278,7 @@ export function MapPage() {
 
       {/* Legende */}
       <div className="absolute top-4 left-4 bg-white rounded-xl px-3 py-2 shadow-lg text-xs space-y-1.5">
-        {(["open", "task", "mystery", "done"] as MarkerState[]).map((s) => (
+        {(["open", "task", "mystery", "photo", "done"] as MarkerState[]).map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
@@ -287,7 +291,7 @@ export function MapPage() {
               {MARKER_STYLE[s].label}
             </div>
             <span className="text-gray-600">
-              {s === "done" ? "Erledigt" : s === "mystery" ? "Mystery Ort" : s === "task" ? "Aufgabe" : "Offen"}
+              {s === "done" ? "Erledigt" : s === "mystery" ? "Mystery Ort" : s === "task" ? "Aufgabe" : s === "photo" ? "Foto-Stop" : "Offen"}
             </span>
           </div>
         ))}
