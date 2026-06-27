@@ -279,7 +279,7 @@ export function AdminPage() {
   // New challenge form
   const [newChallenge, setNewChallenge] = useState({
     place_id: "", title: "", description: "", story: "", day_number: "",
-    start_at: "", end_at: "", points: "20", category: "", is_photo: false,
+    start_at: "", end_at: "", points: "20", category: "", is_photo: false, is_active: true,
   });
 
   async function loadTab(t: Tab) {
@@ -351,12 +351,12 @@ export function AdminPage() {
         points: Number(newChallenge.points),
         start_at: new Date(newChallenge.start_at).toISOString(),
         end_at: new Date(newChallenge.end_at).toISOString(),
-        is_active: true,
+        is_active: newChallenge.is_active,
       }),
     });
     setNewChallenge({
       place_id: "", title: "", description: "", story: "", day_number: "",
-      start_at: "", end_at: "", points: "20", category: "", is_photo: false,
+      start_at: "", end_at: "", points: "20", category: "", is_photo: false, is_active: true,
     });
     showToast("Challenge angelegt.", "success");
     loadTab("challenges");
@@ -1341,9 +1341,15 @@ export function AdminPage() {
                     <div><label className={labelCls}>Start (Berliner Zeit)</label><input type="datetime-local" required className={inputCls} value={newChallenge.start_at} onChange={(e) => setNewChallenge({ ...newChallenge, start_at: e.target.value })} /></div>
                     <div><label className={labelCls}>Ende (Berliner Zeit)</label><input type="datetime-local" required className={inputCls} value={newChallenge.end_at} onChange={(e) => setNewChallenge({ ...newChallenge, end_at: e.target.value })} /></div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" id="new-is-photo" checked={newChallenge.is_photo} onChange={(e) => setNewChallenge({ ...newChallenge, is_photo: e.target.checked })} className="rounded" />
-                    <label htmlFor="new-is-photo" className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Camera className="w-3.5 h-3.5" />Foto-Stop</label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id="new-is-photo" checked={newChallenge.is_photo} onChange={(e) => setNewChallenge({ ...newChallenge, is_photo: e.target.checked })} className="rounded" />
+                      <label htmlFor="new-is-photo" className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Camera className="w-3.5 h-3.5" />Foto-Stop</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id="new-is-active" checked={newChallenge.is_active} onChange={(e) => setNewChallenge({ ...newChallenge, is_active: e.target.checked })} className="rounded" />
+                      <label htmlFor="new-is-active" className="text-xs font-semibold text-gray-600">Aktiv (sichtbar)</label>
+                    </div>
                   </div>
                   <button type="submit" className="w-full rounded-xl py-2.5 text-sm font-bold text-white" style={{ background: "var(--oz-brand-green)" }}>Challenge anlegen</button>
                 </form>

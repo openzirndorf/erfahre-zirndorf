@@ -12,7 +12,7 @@ from auth import get_current_user
 from checkin_logic import already_checked_in_today, award_badges, check_referral_milestone, haversine
 from config import settings
 from database import get_db
-from models import Challenge, CheckIn, QuizAttempt, User
+from models import Challenge, CheckIn, QuizAttempt, User, UserRole
 from routers import challenges as challenges_router
 
 limiter = Limiter(key_func=get_remote_address)
@@ -147,10 +147,11 @@ async def submit_checkin(
 
     now = datetime.now(UTC)
     start = challenge.start_at.replace(tzinfo=UTC) if challenge.start_at.tzinfo is None else challenge.start_at
+    is_admin = current_user.role == UserRole.ADMIN
 
-    if not challenge.is_active:
+    if not challenge.is_active and not is_admin:
         return CheckInResponse(success=False, message="Challenge ist nicht aktiv")
-    if start > now:
+    if start > now and not is_admin:
         return CheckInResponse(success=False, message="Challenge ist noch nicht freigeschaltet")
 
     if await already_checked_in_today(db, current_user.id, body.challenge_id):
@@ -188,7 +189,7 @@ async def submit_checkin(
             return None
         return max(0, MYSTERY_DAILY_LIMIT - mystery_attempts_today - extra)
 
-    if body.position.accuracy_m > settings.max_accuracy_m:
+    if not is_admin and body.position.accuracy_m > settings.max_accuracy_m:
         db.add(CheckIn(
             user_id=current_user.id,
             challenge_id=challenge.id,
@@ -207,7 +208,7 @@ async def submit_checkin(
             attempts_left=_attempts_left(1),
         )
 
-    if distance > challenge.place.radius_m:
+    if not is_admin and distance > challenge.place.radius_m:
         db.add(CheckIn(
             user_id=current_user.id,
             challenge_id=challenge.id,
