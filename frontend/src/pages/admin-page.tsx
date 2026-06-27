@@ -1110,13 +1110,18 @@ export function AdminPage() {
                     <div className="mt-3 rounded-xl bg-gray-50 p-3">
                       <label className={labelCls}>Check-ins zurücksetzen</label>
                       <div className="grid grid-cols-[1fr_auto] gap-2">
-                        <input
-                          type="number"
-                          className={inputCls}
+                        <select
+                          className={`${inputCls} bg-white`}
                           value={resetChallengeIds[user.id] ?? ""}
                           onChange={(e) => setResetChallengeIds((prev) => ({ ...prev, [user.id]: e.target.value }))}
-                          placeholder="Challenge-ID leer = alle"
-                        />
+                        >
+                          <option value="">— alle zurücksetzen —</option>
+                          {challenges.map((c) => (
+                            <option key={c.id} value={String(c.id)}>
+                              {c.day_number ? `Tag ${c.day_number} – ` : ""}{c.title}
+                            </option>
+                          ))}
+                        </select>
                         <button
                           type="button"
                           onClick={() => resetCheckIns(user)}

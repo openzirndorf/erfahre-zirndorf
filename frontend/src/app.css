@@ -55,6 +55,10 @@ header {
   padding-bottom: var(--oz-safe-bottom);
   padding-left: var(--oz-safe-left);
   padding-right: var(--oz-safe-right);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .oz-bottom-nav a {
