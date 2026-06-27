@@ -149,9 +149,11 @@ async def sync_places(checkpoints: list[dict]) -> None:
                 ch.title = cp["title"]; ch.description = cp.get("description", "")
                 ch.story = cp.get("story"); ch.points = cp.get("points", 20)
                 ch.category = cp.get("category"); ch.start_at = start
-                ch.end_at = end_dt; ch.day_number = day_num; ch.is_active = True
+                ch.end_at = end_dt; ch.day_number = day_num
+                ch.is_active = bool(cp.get("is_active", True))
                 ch.is_mystery = bool(cp.get("mystery", False))
                 ch.is_task = bool(cp.get("task", False))
+                ch.is_photo = bool(cp.get("is_photo", False))
                 ch.quiz_question = cp.get("quiz_question")
                 ch.quiz_options = cp.get("quiz_options")
                 ch.quiz_correct_index = cp.get("quiz_correct_index")
@@ -161,9 +163,11 @@ async def sync_places(checkpoints: list[dict]) -> None:
                     place_id=place.id, title=cp["title"],
                     description=cp.get("description", ""), story=cp.get("story"),
                     day_number=day_num, start_at=start, end_at=end_dt,
-                    points=cp.get("points", 20), category=cp.get("category"), is_active=True,
+                    points=cp.get("points", 20), category=cp.get("category"),
+                    is_active=bool(cp.get("is_active", True)),
                     is_mystery=bool(cp.get("mystery", False)),
                     is_task=bool(cp.get("task", False)),
+                    is_photo=bool(cp.get("is_photo", False)),
                     quiz_question=cp.get("quiz_question"),
                     quiz_options=cp.get("quiz_options"),
                     quiz_correct_index=cp.get("quiz_correct_index"),
@@ -237,7 +241,10 @@ async def seed(with_testusers: bool = True, skip_if_users: bool = False) -> None
                 end_at=end_dt,
                 points=cp.get("points", 20),
                 category=cp.get("category"),
-                is_active=True,
+                is_active=bool(cp.get("is_active", True)),
+                is_mystery=bool(cp.get("mystery", False)),
+                is_task=bool(cp.get("task", False)),
+                is_photo=bool(cp.get("is_photo", False)),
             ))
 
         await db.flush()
