@@ -124,6 +124,25 @@ export async function fetchMyProgress(): Promise<UserProgress> {
   return request("/users/me/progress");
 }
 
+// Photos
+export async function submitPhoto(challengeId: number, imageBase64: string): Promise<{ status: string }> {
+  return request(`/photos/${challengeId}`, {
+    method: "POST",
+    body: JSON.stringify({ image_base64: imageBase64 }),
+  });
+}
+
+export async function adminFetchPendingPhotos<T>(): Promise<T> {
+  return request("/photos/admin/pending");
+}
+
+export async function adminReviewPhoto(submissionId: number, approved: boolean, message?: string): Promise<{ status: string; points_awarded: number }> {
+  return request(`/photos/admin/${submissionId}/review`, {
+    method: "PATCH",
+    body: JSON.stringify({ approved, message: message ?? null }),
+  });
+}
+
 // Admin
 export async function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   return request(`/admin${path}`, options);

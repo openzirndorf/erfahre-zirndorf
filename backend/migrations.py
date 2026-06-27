@@ -48,6 +48,8 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
         await conn.execute(text("ALTER TABLE challenges ADD COLUMN is_mystery BOOLEAN NOT NULL DEFAULT false"))
     if "is_task" not in challenge_columns:
         await conn.execute(text("ALTER TABLE challenges ADD COLUMN is_task BOOLEAN NOT NULL DEFAULT false"))
+    if "is_photo" not in challenge_columns:
+        await conn.execute(text("ALTER TABLE challenges ADD COLUMN is_photo BOOLEAN NOT NULL DEFAULT false"))
     if "quiz_question" not in challenge_columns:
         await conn.execute(text("ALTER TABLE challenges ADD COLUMN quiz_question TEXT"))
     if "quiz_options" not in challenge_columns:

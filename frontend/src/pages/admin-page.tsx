@@ -1,6 +1,6 @@
-import { Ban, CheckCircle2, ClipboardList, Flag, HeartPulse, Info, Pencil, Plus, RotateCcw, Save, Shield, Trash2, Unlock, X } from "lucide-react";
+import { Ban, Camera, CheckCircle2, ClipboardList, Flag, HeartPulse, Info, Pencil, Plus, RotateCcw, Save, Shield, Trash2, Unlock, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { adminFetch } from "../api/client";
+import { adminFetchPendingPhotos, adminReviewPhoto, adminFetch } from "../api/client";
 import { useToast } from "../components/toast-provider";
 
 const parseUTC = (s: string) => new Date(/Z|[+-]\d{2}:\d{2}$/.test(s) ? s : s + "Z");
@@ -128,7 +128,19 @@ interface ChallengeCheckInEntry {
   is_flagged: boolean;
 }
 
-type Tab = "stats" | "users" | "flags" | "audit" | "places" | "challenges" | "suggestions" | "upcoming";
+interface PhotoSubmissionEntry {
+  id: number;
+  user_id: number;
+  user_display_name: string;
+  challenge_id: number;
+  challenge_title: string;
+  status: string;
+  admin_message: string | null;
+  submitted_at: string;
+  image_base64: string;
+}
+
+type Tab = "stats" | "users" | "flags" | "audit" | "places" | "challenges" | "suggestions" | "upcoming" | "photos";
 
 const BLOCK_REASON_OPTIONS = [
   { label: "Verdächtiger Standort", value: "Verdächtiger Standort: Bitte melde dich bei OpenZirndorf, wenn du glaubst, dass das ein Fehler ist." },
@@ -240,6 +252,9 @@ export function AdminPage() {
   const [flaggedCheckIns, setFlaggedCheckIns] = useState<FlaggedCheckIn[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [surveyResults, setSurveyResults] = useState<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; created_at: string }[]>([]);
+  const [pendingPhotos, setPendingPhotos] = useState<PhotoSubmissionEntry[]>([]);
+  const [photoRejectMessages, setPhotoRejectMessages] = useState<Record<number, string>>({});
+  const [photoRejectOpen, setPhotoRejectOpen] = useState<Record<number, boolean>>({});
   const [suggestions, setSuggestions] = useState<{ id: number; user_id: number; type: string; text: string; lat: number | null; lon: number | null; image_base64: string | null; admin_reply: string | null; admin_reply_at: string | null; created_at: string; user_display_name: string }[]>([]);
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
   const [replyOpen, setReplyOpen] = useState<Record<number, boolean>>({});
@@ -264,7 +279,7 @@ export function AdminPage() {
   // New challenge form
   const [newChallenge, setNewChallenge] = useState({
     place_id: "", title: "", description: "", story: "", day_number: "",
-    start_at: "", end_at: "", points: "20", category: "",
+    start_at: "", end_at: "", points: "20", category: "", is_photo: false,
   });
 
   async function loadTab(t: Tab) {
@@ -299,6 +314,7 @@ export function AdminPage() {
       if (t === "audit") setAuditLog(await adminFetch("/audit-log"));
       if (t === "suggestions") setSuggestions(await adminFetch<typeof suggestions>("/suggestions").catch(() => []));
       if (t === "upcoming") setUpcoming(await adminFetch<AdminChallenge[]>("/challenges/upcoming"));
+      if (t === "photos") setPendingPhotos(await adminFetchPendingPhotos<PhotoSubmissionEntry[]>());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Fehler");
     } finally {
@@ -340,7 +356,7 @@ export function AdminPage() {
     });
     setNewChallenge({
       place_id: "", title: "", description: "", story: "", day_number: "",
-      start_at: "", end_at: "", points: "20", category: "",
+      start_at: "", end_at: "", points: "20", category: "", is_photo: false,
     });
     showToast("Challenge angelegt.", "success");
     loadTab("challenges");
@@ -533,7 +549,7 @@ export function AdminPage() {
 
       {/* Tabs */}
       <div className="grid grid-cols-3 rounded-xl bg-gray-100 p-1 mb-6 gap-1">
-        {(["stats", "users", "flags", "audit", "places", "challenges", "suggestions", "upcoming"] as Tab[]).map((t) => (
+        {(["stats", "users", "flags", "audit", "places", "challenges", "suggestions", "upcoming", "photos"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
@@ -542,7 +558,7 @@ export function AdminPage() {
               tab === t ? "bg-white shadow text-gray-900" : "text-gray-500"
             }`}
           >
-            {t === "stats" ? "Übersicht" : t === "users" ? "Nutzer" : t === "flags" ? "Prüfung" : t === "audit" ? "Audit" : t === "places" ? "Orte" : t === "challenges" ? "Challenges" : t === "suggestions" ? (
+            {t === "stats" ? "Übersicht" : t === "users" ? "Nutzer" : t === "flags" ? "Prüfung" : t === "audit" ? "Audit" : t === "places" ? "Orte" : t === "challenges" ? "Challenges" : t === "photos" ? "Fotos" : t === "suggestions" ? (
               <span className="relative">
                 Kontakt
                 {stats && stats.unanswered_support > 0 && (
@@ -835,6 +851,95 @@ export function AdminPage() {
                       Löschen
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "photos" && (
+            <div className="space-y-3">
+              {pendingPhotos.length === 0 && (
+                <div className="rounded-2xl bg-white p-5 text-center text-sm text-gray-500 shadow-sm">
+                  Keine ausstehenden Fotos.
+                </div>
+              )}
+              {pendingPhotos.map((photo) => (
+                <div key={photo.id} className="rounded-2xl bg-white p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm truncate">{photo.user_display_name}</p>
+                      <p className="text-xs text-gray-500 truncate">{photo.challenge_title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(photo.submitted_at).toLocaleString("de-DE", { timeZone: "Europe/Berlin", dateStyle: "short", timeStyle: "short" })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Camera className="w-4 h-4 text-gray-400" />
+                      <span className="text-xs font-bold text-yellow-600">ausstehend</span>
+                    </div>
+                  </div>
+
+                  <img
+                    src={photo.image_base64}
+                    alt="Eingereicht"
+                    className="w-full rounded-xl object-cover mb-3"
+                    style={{ maxHeight: "240px" }}
+                  />
+
+                  {photoRejectOpen[photo.id] ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={photoRejectMessages[photo.id] ?? ""}
+                        onChange={(e) => setPhotoRejectMessages((p) => ({ ...p, [photo.id]: e.target.value }))}
+                        rows={2}
+                        placeholder="Ablehnungsgrund (optional)…"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await adminReviewPhoto(photo.id, false, photoRejectMessages[photo.id] || undefined);
+                            showToast("Foto abgelehnt.", "success");
+                            setPendingPhotos((p) => p.filter((x) => x.id !== photo.id));
+                          }}
+                          className="flex-1 rounded-xl py-2 text-xs font-bold bg-red-600 text-white"
+                        >
+                          Ablehnen bestätigen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPhotoRejectOpen((p) => ({ ...p, [photo.id]: false }))}
+                          className="rounded-xl px-3 py-2 text-xs font-bold bg-gray-100 text-gray-600"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await adminReviewPhoto(photo.id, true);
+                          showToast("Foto freigegeben – Punkte gutgeschrieben.", "success");
+                          setPendingPhotos((p) => p.filter((x) => x.id !== photo.id));
+                        }}
+                        className="flex items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-bold bg-green-50 text-green-700"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Freigeben
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoRejectOpen((p) => ({ ...p, [photo.id]: true }))}
+                        className="flex items-center justify-center gap-1 rounded-xl py-2.5 text-xs font-bold bg-red-50 text-red-700"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Ablehnen
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1191,9 +1296,15 @@ export function AdminPage() {
                             <input type="datetime-local" className={inputCls} value={challengeDraft.end_at ? toBerlinInput(challengeDraft.end_at) : ""} onChange={(e) => setChallengeDraft((d) => ({ ...d, end_at: e.target.value }))} />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <input type="checkbox" id={`active-${c.id}`} checked={challengeDraft.is_active ?? true} onChange={(e) => setChallengeDraft((d) => ({ ...d, is_active: e.target.checked }))} className="rounded" />
-                          <label htmlFor={`active-${c.id}`} className="text-xs font-semibold text-gray-600">Aktiv</label>
+                        <div className="flex gap-4">
+                          <div className="flex items-center gap-2">
+                            <input type="checkbox" id={`active-${c.id}`} checked={challengeDraft.is_active ?? true} onChange={(e) => setChallengeDraft((d) => ({ ...d, is_active: e.target.checked }))} className="rounded" />
+                            <label htmlFor={`active-${c.id}`} className="text-xs font-semibold text-gray-600">Aktiv</label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input type="checkbox" id={`photo-${c.id}`} checked={(challengeDraft as { is_photo?: boolean }).is_photo ?? false} onChange={(e) => setChallengeDraft((d) => ({ ...d, is_photo: e.target.checked }))} className="rounded" />
+                            <label htmlFor={`photo-${c.id}`} className="text-xs font-semibold text-gray-600">Foto-Stop</label>
+                          </div>
                         </div>
                         <button type="button" onClick={saveChallenge} className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold text-white" style={{ background: "var(--oz-brand-green)" }}>
                           <Save className="w-4 h-4" />
@@ -1229,6 +1340,10 @@ export function AdminPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <div><label className={labelCls}>Start (Berliner Zeit)</label><input type="datetime-local" required className={inputCls} value={newChallenge.start_at} onChange={(e) => setNewChallenge({ ...newChallenge, start_at: e.target.value })} /></div>
                     <div><label className={labelCls}>Ende (Berliner Zeit)</label><input type="datetime-local" required className={inputCls} value={newChallenge.end_at} onChange={(e) => setNewChallenge({ ...newChallenge, end_at: e.target.value })} /></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="new-is-photo" checked={newChallenge.is_photo} onChange={(e) => setNewChallenge({ ...newChallenge, is_photo: e.target.checked })} className="rounded" />
+                    <label htmlFor="new-is-photo" className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Camera className="w-3.5 h-3.5" />Foto-Stop</label>
                   </div>
                   <button type="submit" className="w-full rounded-xl py-2.5 text-sm font-bold text-white" style={{ background: "var(--oz-brand-green)" }}>Challenge anlegen</button>
                 </form>

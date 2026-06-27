@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -96,6 +96,7 @@ class Challenge(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_mystery: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_task: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_photo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     quiz_question: Mapped[str | None] = mapped_column(Text, nullable=True)
     quiz_options: Mapped[list | None] = mapped_column(JSON, nullable=True)
     quiz_correct_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -120,6 +121,24 @@ class CheckIn(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="checkins")
     challenge: Mapped["Challenge"] = relationship("Challenge", back_populates="checkins")
+
+
+class PhotoSubmission(Base):
+    __tablename__ = "photo_submissions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    challenge_id: Mapped[int] = mapped_column(ForeignKey("challenges.id"), nullable=False)
+    image_base64: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")  # pending|approved|rejected
+    admin_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship("User")
+    challenge: Mapped["Challenge"] = relationship("Challenge")
+
+    __table_args__ = (UniqueConstraint("user_id", "challenge_id", name="uq_photo_submission"),)
 
 
 class AdminAuditLog(Base):

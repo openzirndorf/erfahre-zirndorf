@@ -1,4 +1,4 @@
-import { ArrowLeft, ClipboardList, ExternalLink, HelpCircle, MapPin, Star, Trophy, Zap } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, ClipboardList, Clock, ExternalLink, HelpCircle, MapPin, Star, Trophy, Zap } from "lucide-react";
 
 const MASCOTS = [
   "/images/maskottchen/fynn_plain.webp",
@@ -9,9 +9,9 @@ const MASCOTS = [
   "/images/maskottchen/quirin_plain.webp",
   "/images/maskottchen/tuxi_plain.webp",
 ];
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { fetchChallenge } from "../api/client";
+import { fetchChallenge, submitPhoto } from "../api/client";
 import { ChallengeMap, type UserPosition } from "../components/challenge-map";
 import { CheckInButton } from "../components/checkin-button";
 import { SuccessModal } from "../components/success-modal";
@@ -30,6 +30,11 @@ export function ChallengePage() {
   const [checkedIn, setCheckedIn] = useState(false);
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
+  const [photoRequired, setPhotoRequired] = useState(false);
+  const [photoStatus, setPhotoStatus] = useState<string | null | undefined>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -39,18 +44,49 @@ export function ChallengePage() {
     setCheckedIn(false);
     setUserPosition(null);
     setQuizAnswer(null);
+    setPhotoRequired(false);
+    setPhotoStatus(null);
+    setPhotoError(null);
     fetchChallenge(Number(id), isPreview)
       .then((c) => {
         setChallenge(c);
         setCheckedIn(c.user_checked_in ?? false);
+        if (c.is_photo) setPhotoStatus(c.photo_submission_status ?? null);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
 
   function handleSuccess(response: CheckInResponse) {
-    setSuccessResponse(response);
     setCheckedIn(true);
+    if (response.photo_required) {
+      setPhotoRequired(true);
+    } else {
+      setSuccessResponse(response);
+    }
+  }
+
+  async function handlePhotoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !challenge) return;
+    setPhotoError(null);
+    setPhotoUploading(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      await submitPhoto(challenge.id, base64);
+      setPhotoStatus("pending");
+      setPhotoRequired(false);
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
+    } finally {
+      setPhotoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   if (loading) {
@@ -187,6 +223,109 @@ export function ChallengePage() {
           </div>
         )}
 
+        {/* ── Foto-Banner (vor Check-in) ── */}
+        {challenge.is_photo && !checkedIn && (
+          <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "#1a1a1a", border: "1px solid #333" }}>
+            <Camera className="w-5 h-5 shrink-0 mt-0.5 text-white" />
+            <div>
+              <p className="text-sm font-bold text-white">Foto-Stop</p>
+              <p className="text-xs mt-0.5 text-gray-300">
+                Check zuerst per GPS ein – dann lädst du ein Foto hoch. Du erhältst die Punkte, sobald das Foto freigegeben wurde.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Foto-Upload (nach GPS-Check-in, Foto noch ausstehend) ── */}
+        {challenge.is_photo && checkedIn && (photoRequired || (!photoStatus)) && (
+          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Camera className="w-5 h-5" style={{ color: "#1a1a1a" }} />
+              <p className="font-bold text-sm">Foto hochladen</p>
+            </div>
+            <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+              Dein Standort wurde bestätigt! Lade jetzt ein Foto hoch, das beweist, dass du wirklich vor Ort warst. Punkte gibt es nach der Freigabe.
+            </p>
+            {photoError && <p className="text-xs text-red-600 mb-3">{photoError}</p>}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoFileChange}
+            />
+            <button
+              type="button"
+              disabled={photoUploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50"
+              style={{ background: "#1a1a1a" }}
+            >
+              <Camera className="w-4 h-4" />
+              {photoUploading ? "Wird hochgeladen …" : "Foto aufnehmen / auswählen"}
+            </button>
+          </div>
+        )}
+
+        {/* ── Foto in Prüfung ── */}
+        {challenge.is_photo && checkedIn && photoStatus === "pending" && (
+          <div className="rounded-2xl p-4 flex items-start gap-3 bg-yellow-50" style={{ border: "1px solid #fde68a" }}>
+            <Clock className="w-5 h-5 shrink-0 mt-0.5 text-yellow-600" />
+            <div>
+              <p className="text-sm font-bold text-yellow-800">Foto in Prüfung</p>
+              <p className="text-xs mt-0.5 text-yellow-700">
+                Dein Foto wurde eingereicht und wird geprüft. Du erhältst deine Punkte nach der Freigabe.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Foto abgelehnt ── */}
+        {challenge.is_photo && checkedIn && photoStatus === "rejected" && (
+          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)", border: "1px solid #fca5a5" }}>
+            <div className="flex items-center gap-2 mb-2">
+              <Camera className="w-5 h-5 text-red-600" />
+              <p className="font-bold text-sm text-red-700">Foto abgelehnt</p>
+            </div>
+            <p className="text-xs text-red-600 mb-4 leading-relaxed">
+              Dein Foto wurde leider nicht akzeptiert. Du kannst ein neues Foto einreichen.
+            </p>
+            {photoError && <p className="text-xs text-red-600 mb-3">{photoError}</p>}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoFileChange}
+            />
+            <button
+              type="button"
+              disabled={photoUploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50"
+              style={{ background: "#1a1a1a" }}
+            >
+              <Camera className="w-4 h-4" />
+              {photoUploading ? "Wird hochgeladen …" : "Neues Foto einreichen"}
+            </button>
+          </div>
+        )}
+
+        {/* ── Foto freigegeben ── */}
+        {challenge.is_photo && checkedIn && photoStatus === "approved" && (
+          <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "var(--oz-brand-green-light)", border: "1px solid var(--oz-brand-green)" }}>
+            <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "var(--oz-brand-green)" }} />
+            <div>
+              <p className="text-sm font-bold" style={{ color: "var(--oz-brand-green)" }}>Foto freigegeben!</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--oz-brand-green)" }}>
+                Dein Foto wurde akzeptiert und die Punkte wurden gutgeschrieben.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Karte (nur für normale Challenges) ── */}
         {!challenge.is_mystery && (
           <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "var(--oz-shadow)" }}>
@@ -235,6 +374,7 @@ export function ChallengePage() {
         )}
 
         {/* ── Check-in + Punkte ── */}
+        {!(challenge.is_photo && checkedIn) && (
         <div className="bg-white rounded-2xl p-4" style={{ boxShadow: "var(--oz-shadow)" }}>
           {!checkedIn && (
             <div className="flex gap-2 text-xs mb-3">
@@ -267,6 +407,7 @@ export function ChallengePage() {
             quizAnswerIndex={challenge.quiz_question ? quizAnswer : undefined}
           />
         </div>
+        )}
 
         {/* ── Story ── */}
         {challenge.story && (

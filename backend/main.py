@@ -24,7 +24,7 @@ try:
 
     from config import settings
     from database import init_db
-    from routers import admin, auth, challenges, checkins, suggestions, survey, teams, users
+    from routers import admin, auth, challenges, checkins, photos, suggestions, survey, teams, users
 except Exception:
     logger.critical("IMPORT FEHLGESCHLAGEN:\n%s", traceback.format_exc())
     sys.exit(1)
@@ -72,6 +72,7 @@ def create_app() -> FastAPI:
     app.include_router(survey.router)
     app.include_router(users.router)
     app.include_router(suggestions.router)
+    app.include_router(photos.router)
     app.include_router(admin.router)
 
     @app.get("/api/health")

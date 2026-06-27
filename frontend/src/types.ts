@@ -22,6 +22,7 @@ export interface Challenge {
   is_active: boolean;
   is_mystery: boolean;
   is_task: boolean;
+  is_photo: boolean;
   quiz_question?: string | null;
   quiz_options?: string[] | null;
   place: Place;
@@ -29,6 +30,7 @@ export interface Challenge {
   checkin_count: number;
   first_day_active: boolean;
   mystery_attempts_left?: number | null;
+  photo_submission_status?: "pending" | "approved" | "rejected" | null;
 }
 
 // Bonuswerte – müssen mit backend/config.py übereinstimmen
@@ -73,6 +75,7 @@ export interface CheckInResponse {
   is_flagged: boolean;
   attempts_left?: number | null;
   referral_milestone_triggered?: boolean;
+  photo_required?: boolean;
 }
 
 export interface UserRankEntry {

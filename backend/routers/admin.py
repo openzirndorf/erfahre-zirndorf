@@ -63,6 +63,7 @@ class ChallengeCreate(BaseModel):
     points: int = 20
     category: str | None = None
     is_active: bool = True
+    is_photo: bool = False
 
 
 class ChallengeUpdate(BaseModel):
@@ -75,6 +76,7 @@ class ChallengeUpdate(BaseModel):
     points: int | None = None
     category: str | None = None
     is_active: bool | None = None
+    is_photo: bool | None = None
 
 
 class ChallengeOut(BaseModel):
@@ -89,6 +91,7 @@ class ChallengeOut(BaseModel):
     category: str | None
     is_active: bool
     story: str | None
+    is_photo: bool = False
 
     model_config = {"from_attributes": True}
 

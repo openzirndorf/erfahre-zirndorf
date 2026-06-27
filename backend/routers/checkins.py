@@ -58,6 +58,7 @@ class CheckInResponse(BaseModel):
     is_flagged: bool = False
     attempts_left: int | None = None
     referral_milestone_triggered: bool = False
+    photo_required: bool = False
 
 
 async def _count_successful_checkins(db: AsyncSession, challenge_id: int) -> int:
@@ -265,6 +266,29 @@ async def submit_checkin(
             )
 
         quiz_penalty = wrong_count * 3
+
+    # ── Foto-Stop: GPS OK, Punkte erst nach Foto-Freigabe ─────────────────
+    if challenge.is_photo:
+        db.add(CheckIn(
+            user_id=current_user.id,
+            challenge_id=challenge.id,
+            success=True,
+            points_awarded=0,
+            distance_m=round(distance),
+            accuracy_m=round(body.position.accuracy_m),
+            is_flagged=is_flagged,
+            flag_reason=flag_reason,
+        ))
+        challenges_router._counts_cache_ts = 0.0
+        await db.flush()
+        return CheckInResponse(
+            success=True,
+            message="Standort bestätigt! Lade jetzt dein Foto hoch.",
+            points_awarded=0,
+            distance_m=round(distance),
+            is_flagged=is_flagged,
+            photo_required=True,
+        )
 
     # ── Bonus-Berechnung vor dem Speichern ────────────────────────────────
     bonuses: list[BonusInfo] = []

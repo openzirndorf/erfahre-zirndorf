@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from auth import get_optional_user
 from config import settings
 from database import get_db
-from models import Challenge, CheckIn, User, UserRole
+from models import Challenge, CheckIn, PhotoSubmission, User, UserRole
 
 router = APIRouter(prefix="/api/challenges", tags=["challenges"])
 
@@ -52,6 +52,7 @@ class ChallengeOut(BaseModel):
     is_active: bool
     is_mystery: bool = False
     is_task: bool = False
+    is_photo: bool = False
     quiz_question: str | None = None
     quiz_options: list[str] | None = None
     place: PlaceOut
@@ -64,6 +65,7 @@ class ChallengeOut(BaseModel):
 class ChallengeWithStatus(ChallengeOut):
     user_checked_in: bool = False
     mystery_attempts_left: int | None = None
+    photo_submission_status: str | None = None
 
 
 def _is_active_now(challenge: Challenge) -> bool:
@@ -127,6 +129,7 @@ def _to_out(c: Challenge, count: int = 0, mystery_index: int | None = None) -> C
         is_active=_is_active_now(c),
         is_mystery=c.is_mystery,
         is_task=c.is_task,
+        is_photo=c.is_photo,
         quiz_question=c.quiz_question,
         quiz_options=c.quiz_options,
         place=place_out,
@@ -155,6 +158,7 @@ async def list_challenges(
     counts = await _checkin_counts(db, [c.id for c in challenges])
 
     checked_ids: set[int] = set()
+    photo_status_map: dict[int, str] = {}
     if current_user:
         ci_result = await db.execute(
             select(CheckIn.challenge_id).where(
@@ -163,6 +167,15 @@ async def list_challenges(
             )
         )
         checked_ids = set(ci_result.scalars().all())
+        photo_ids = [c.id for c in challenges if c.is_photo and c.id in checked_ids]
+        if photo_ids:
+            ps_result = await db.execute(
+                select(PhotoSubmission.challenge_id, PhotoSubmission.status).where(
+                    PhotoSubmission.user_id == current_user.id,
+                    PhotoSubmission.challenge_id.in_(photo_ids),
+                )
+            )
+            photo_status_map = {row.challenge_id: row.status for row in ps_result.all()}
 
     mystery_counter = 0
     result_list = []
@@ -173,6 +186,7 @@ async def list_challenges(
         result_list.append(ChallengeWithStatus(
             **_to_out(c, counts.get(c.id, 0), mystery_index=mi).model_dump(),
             user_checked_in=c.id in checked_ids,
+            photo_submission_status=photo_status_map.get(c.id),
         ))
     return result_list
 
@@ -215,6 +229,7 @@ async def today_challenges(
     counts = await _checkin_counts(db, [c.id for c in challenges])
 
     checked_ids: set[int] = set()
+    photo_status_map2: dict[int, str] = {}
     if current_user:
         ci_result = await db.execute(
             select(CheckIn.challenge_id).where(
@@ -223,6 +238,15 @@ async def today_challenges(
             )
         )
         checked_ids = set(ci_result.scalars().all())
+        photo_ids = [c.id for c in challenges if c.is_photo and c.id in checked_ids]
+        if photo_ids:
+            ps_result = await db.execute(
+                select(PhotoSubmission.challenge_id, PhotoSubmission.status).where(
+                    PhotoSubmission.user_id == current_user.id,
+                    PhotoSubmission.challenge_id.in_(photo_ids),
+                )
+            )
+            photo_status_map2 = {row.challenge_id: row.status for row in ps_result.all()}
 
     mystery_counter = 0
     result_list = []
@@ -233,6 +257,7 @@ async def today_challenges(
         result_list.append(ChallengeWithStatus(
             **_to_out(c, counts.get(c.id, 0), mystery_index=mi).model_dump(),
             user_checked_in=c.id in checked_ids,
+            photo_submission_status=photo_status_map2.get(c.id),
         ))
     return result_list
 
@@ -262,6 +287,7 @@ async def get_challenge(
 
     checked = False
     mystery_attempts_left: int | None = None
+    photo_submission_status: str | None = None
     if current_user:
         ci_result = await db.execute(
             select(CheckIn).where(
@@ -284,8 +310,18 @@ async def get_challenge(
             )).scalar_one()
             mystery_attempts_left = max(0, MYSTERY_DAILY_LIMIT - attempts_today)
 
+        if challenge.is_photo and checked:
+            ps_result = await db.execute(
+                select(PhotoSubmission.status).where(
+                    PhotoSubmission.user_id == current_user.id,
+                    PhotoSubmission.challenge_id == challenge_id,
+                )
+            )
+            photo_submission_status = ps_result.scalar_one_or_none()
+
     return ChallengeWithStatus(
         **_to_out(challenge, counts.get(challenge_id, 0)).model_dump(),
         user_checked_in=checked,
         mystery_attempts_left=mystery_attempts_left,
+        photo_submission_status=photo_submission_status,
     )

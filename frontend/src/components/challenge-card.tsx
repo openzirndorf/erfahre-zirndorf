@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardList, HelpCircle, Lock, MapPin, Star, Trophy, Zap } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardList, Clock, HelpCircle, Lock, MapPin, Star, Trophy, Zap } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
 import { cn } from "../lib/utils";
@@ -149,6 +149,21 @@ export function ChallengeCard({ challenge }: Props) {
                     <ClipboardList className="w-2.5 h-2.5" />AUFGABE
                   </span>
                 )}
+                {challenge.is_photo && !done && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 bg-gray-900 text-white">
+                    <Camera className="w-2.5 h-2.5" />FOTO
+                  </span>
+                )}
+                {challenge.is_photo && done && challenge.photo_submission_status === "pending" && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 bg-yellow-100 text-yellow-700">
+                    <Clock className="w-2.5 h-2.5" />AUSSTEHEND
+                  </span>
+                )}
+                {challenge.is_photo && done && challenge.photo_submission_status === "rejected" && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 bg-red-100 text-red-700">
+                    <Camera className="w-2.5 h-2.5" />NEU EINREICHEN
+                  </span>
+                )}
               </div>
               <h3
                 className="font-bold text-gray-900 text-base leading-snug truncate"
@@ -181,12 +196,27 @@ export function ChallengeCard({ challenge }: Props) {
             )}
           </div>
 
-          {done && (
+          {done && (!challenge.is_photo || challenge.photo_submission_status === "approved") && (
             <div
               className="mt-3 text-xs font-semibold flex items-center gap-1 rounded-full px-3 py-1 w-fit"
               style={{ background: "var(--oz-brand-green-light)", color: "var(--oz-brand-green)" }}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />Erledigt
+            </div>
+          )}
+          {done && challenge.is_photo && challenge.photo_submission_status === "pending" && (
+            <div className="mt-3 text-xs font-semibold flex items-center gap-1 rounded-full px-3 py-1 w-fit bg-yellow-50 text-yellow-700">
+              <Clock className="w-3.5 h-3.5" />Foto in Prüfung
+            </div>
+          )}
+          {done && challenge.is_photo && challenge.photo_submission_status === "rejected" && (
+            <div className="mt-3 text-xs font-semibold flex items-center gap-1 rounded-full px-3 py-1 w-fit bg-red-50 text-red-700">
+              <Camera className="w-3.5 h-3.5" />Foto abgelehnt
+            </div>
+          )}
+          {done && challenge.is_photo && !challenge.photo_submission_status && (
+            <div className="mt-3 text-xs font-semibold flex items-center gap-1 rounded-full px-3 py-1 w-fit bg-gray-100 text-gray-600">
+              <Camera className="w-3.5 h-3.5" />Foto hochladen
             </div>
           )}
         </div>
