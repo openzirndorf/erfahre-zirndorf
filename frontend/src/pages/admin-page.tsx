@@ -297,9 +297,13 @@ export function AdminPage() {
         setSurveyResults(loadedSurvey);
       }
       if (t === "users") {
-        const loaded = await adminFetch<AdminUser[]>("/users");
+        const [loaded, loadedChallenges] = await Promise.all([
+          adminFetch<AdminUser[]>("/users"),
+          challenges.length === 0 ? adminFetch<AdminChallenge[]>("/challenges") : Promise.resolve(challenges),
+        ]);
         setUsers(loaded);
         setEditingUsers(Object.fromEntries(loaded.map((u) => [u.id, { ...u }])));
+        if (challenges.length === 0) setChallenges(loadedChallenges);
       }
       if (t === "places") setPlaces(await adminFetch("/places"));
       if (t === "challenges") {
