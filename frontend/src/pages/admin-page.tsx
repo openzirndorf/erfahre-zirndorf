@@ -115,6 +115,8 @@ interface UserDetail {
   }>;
   badges: Array<{ id: number; title: string; icon: string; awarded_at: string }>;
   audit_log: AuditLogEntry[];
+  checkin_points: number;
+  referrals: Array<{ display_name: string; points: number; milestone_paid: boolean }>;
 }
 
 interface ChallengeCheckInEntry {
@@ -162,6 +164,7 @@ function UserDetailPanel({ detail }: { detail?: UserDetail }) {
 
   const successCheckins = detail.checkins.filter((c) => c.success);
   const visibleCheckins = showAllCheckins ? successCheckins : successCheckins.slice(0, 5);
+  const bonusPoints = detail.user.points - (detail.checkin_points ?? 0);
 
   return (
     <div className="mt-3 space-y-3 rounded-xl bg-gray-50 p-3">
@@ -179,6 +182,45 @@ function UserDetailPanel({ detail }: { detail?: UserDetail }) {
           <p className="text-[10px] text-gray-500">Markiert</p>
         </div>
       </div>
+
+      {/* Punkte-Aufschlüsselung */}
+      <div className="rounded-lg bg-white p-2 text-xs">
+        <p className="font-bold text-gray-700 mb-1.5">Punkte</p>
+        <div className="space-y-1 text-gray-600">
+          <div className="flex justify-between">
+            <span>Check-in Punkte</span><span className="font-mono">{detail.checkin_points ?? 0}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Bonus (Empfehlung / manuell)</span>
+            <span className="font-mono">{bonusPoints >= 0 ? "+" : ""}{bonusPoints}</span>
+          </div>
+          <div className="flex justify-between font-bold border-t border-gray-100 pt-1 mt-1">
+            <span>Gesamt</span><span className="font-mono">{detail.user.points}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Geworbene Personen */}
+      {(detail.referrals?.length ?? 0) > 0 && (
+        <div className="rounded-lg bg-white p-2 text-xs">
+          <p className="font-bold text-gray-700 mb-1.5">Geworbene Personen</p>
+          <div className="space-y-1">
+            {detail.referrals.map((r) => (
+              <div key={r.display_name} className="flex items-center justify-between">
+                <span className="text-gray-700">{r.display_name}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-400">{r.points} Pkt</span>
+                  {r.milestone_paid ? (
+                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-green-100 text-green-700">+40 ✓</span>
+                  ) : (
+                    <span className="text-[9px] text-gray-400">{r.points}/100</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <p className="text-xs font-bold text-gray-700 mb-2">Check-ins ({successCheckins.length})</p>

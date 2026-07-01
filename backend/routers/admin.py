@@ -223,11 +223,19 @@ class UserDetailBadge(BaseModel):
         return _utc_iso(v)
 
 
+class ReferralDetail(BaseModel):
+    display_name: str
+    points: int
+    milestone_paid: bool
+
+
 class UserDetailOut(BaseModel):
     user: UserOut
     checkins: list[UserDetailCheckIn]
     badges: list[UserDetailBadge]
     audit_log: list[AuditLogOut]
+    checkin_points: int = 0
+    referrals: list[ReferralDetail] = []
 
 
 class HealthStatusOut(BaseModel):
@@ -574,6 +582,21 @@ async def user_detail(
         select(func.count()).where(User.referred_by_user_id == user_id)
     )).scalar_one()
 
+    checkin_pts = (await db.execute(
+        select(func.coalesce(func.sum(CheckIn.points_awarded), 0)).where(
+            and_(CheckIn.user_id == user_id, CheckIn.success == True)  # noqa: E712
+        )
+    )).scalar_one()
+
+    referrals_detail = [
+        ReferralDetail(display_name=row[0], points=row[1], milestone_paid=row[2])
+        for row in (await db.execute(
+            select(User.display_name, User.points, User.referral_milestone_paid)
+            .where(User.referred_by_user_id == user_id)
+            .order_by(User.points.desc())
+        )).all()
+    ]
+
     checkins_result = await db.execute(
         select(CheckIn)
         .options(selectinload(CheckIn.challenge))
@@ -639,6 +662,8 @@ async def user_detail(
             )
             for entry, admin_display_name in audit_result.all()
         ],
+        checkin_points=checkin_pts,
+        referrals=referrals_detail,
     )
 
 
