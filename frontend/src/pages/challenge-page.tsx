@@ -194,6 +194,45 @@ export function ChallengePage() {
           </div>
         )}
 
+        {/* ── Foto abgelehnt – prominent oben ── */}
+        {challenge.is_photo && checkedIn && photoStatus === "rejected" && (
+          <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid #dc2626" }}>
+            <div className="bg-red-600 px-4 py-3 flex items-center gap-2">
+              <Camera className="w-4 h-4 text-white shrink-0" />
+              <p className="font-bold text-sm text-white">Dein Foto wurde abgelehnt</p>
+            </div>
+            <div className="bg-white px-4 py-4">
+              {challenge.photo_admin_message && (
+                <p className="text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3 leading-relaxed font-medium">
+                  {challenge.photo_admin_message}
+                </p>
+              )}
+              <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                Du kannst jetzt ein neues Foto einreichen.
+              </p>
+              {photoError && <p className="text-xs text-red-600 mb-3">{photoError}</p>}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoFileChange}
+              />
+              <button
+                type="button"
+                disabled={photoUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50"
+                style={{ background: "#dc2626" }}
+              >
+                <Camera className="w-4 h-4" />
+                {photoUploading ? "Wird hochgeladen …" : "Neues Foto einreichen"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Mystery-Banner ── */}
         {challenge.is_mystery && !checkedIn && (
           <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "#f3f0ff", border: "1px solid #c4b5fd" }}>
@@ -281,42 +320,6 @@ export function ChallengePage() {
           </div>
         )}
 
-        {/* ── Foto abgelehnt ── */}
-        {challenge.is_photo && checkedIn && photoStatus === "rejected" && (
-          <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)", border: "1px solid #fca5a5" }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Camera className="w-5 h-5 text-red-600" />
-              <p className="font-bold text-sm text-red-700">Foto abgelehnt</p>
-            </div>
-            {challenge.photo_admin_message && (
-              <p className="text-xs font-semibold text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-3 leading-relaxed">
-                {challenge.photo_admin_message}
-              </p>
-            )}
-            <p className="text-xs text-red-600 mb-4 leading-relaxed">
-              Du kannst ein neues Foto einreichen.
-            </p>
-            {photoError && <p className="text-xs text-red-600 mb-3">{photoError}</p>}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handlePhotoFileChange}
-            />
-            <button
-              type="button"
-              disabled={photoUploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: "#1a1a1a" }}
-            >
-              <Camera className="w-4 h-4" />
-              {photoUploading ? "Wird hochgeladen …" : "Neues Foto einreichen"}
-            </button>
-          </div>
-        )}
 
         {/* ── Foto freigegeben ── */}
         {challenge.is_photo && checkedIn && photoStatus === "approved" && (
