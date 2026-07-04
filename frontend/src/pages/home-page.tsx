@@ -1,4 +1,4 @@
-import { Bike, CheckCircle2, Clock, Gift, LayoutList, Lock } from "lucide-react";
+import { Bike, Camera, CheckCircle2, Clock, Gift, LayoutList, Lock } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchChallenges, fetchTodayChallenges } from "../api/client";
@@ -26,11 +26,24 @@ function useEventState() {
 /** Hervorgehobene Karte für die heutige Tageschallenge */
 function TodayHero({ challenge }: { challenge: Challenge }) {
   const done = challenge.user_checked_in ?? false;
+  const photoPending = challenge.is_photo && challenge.photo_submission_status === "pending";
+  const photoRejected = challenge.is_photo && challenge.photo_submission_status === "rejected";
+  const photoAwaitingUpload = challenge.is_photo && done && !challenge.photo_submission_status;
+  const completed = done && (!challenge.is_photo || challenge.photo_submission_status === "approved");
+
+  const background = photoRejected
+    ? "#8b3a3a"
+    : photoPending || photoAwaitingUpload
+    ? "#8a6d1f"
+    : completed
+    ? "#4b7c4b"
+    : "linear-gradient(135deg, var(--oz-brand-green) 0%, #007a00 100%)";
+
   return (
     <Link to={`/challenge/${challenge.id}`} className="block no-underline mb-3">
       <div
         className="rounded-2xl overflow-hidden text-white relative"
-        style={{ background: done ? "#4b7c4b" : "linear-gradient(135deg, var(--oz-brand-green) 0%, #007a00 100%)" }}
+        style={{ background }}
       >
         <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full" />
         <div className="absolute -right-2 -bottom-8 w-20 h-20 bg-white/5 rounded-full" />
@@ -53,7 +66,19 @@ function TodayHero({ challenge }: { challenge: Challenge }) {
           <p className="text-sm opacity-85 line-clamp-2 mb-3">{challenge.description}</p>
           <div className="flex items-center justify-between">
             <span className="text-xs opacity-75">{challenge.place.title}</span>
-            {done ? (
+            {photoRejected ? (
+              <span className="flex items-center gap-1 text-sm font-bold bg-white/20 rounded-full px-3 py-1">
+                <Camera className="w-4 h-4" /> Foto abgelehnt
+              </span>
+            ) : photoPending ? (
+              <span className="flex items-center gap-1 text-sm font-bold bg-white/20 rounded-full px-3 py-1">
+                <Clock className="w-4 h-4" /> Foto in Prüfung
+              </span>
+            ) : photoAwaitingUpload ? (
+              <span className="flex items-center gap-1 text-sm font-bold bg-white/20 rounded-full px-3 py-1">
+                <Camera className="w-4 h-4" /> Foto hochladen
+              </span>
+            ) : completed ? (
               <span className="flex items-center gap-1 text-sm font-bold bg-white/20 rounded-full px-3 py-1">
                 <CheckCircle2 className="w-4 h-4" /> Erledigt
               </span>

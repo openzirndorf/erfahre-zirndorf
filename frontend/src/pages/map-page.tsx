@@ -15,13 +15,19 @@ function isLoggedIn(): boolean {
   try { return !!localStorage.getItem("auth"); } catch { return false; }
 }
 
-type MarkerState = "done" | "open" | "mystery" | "mystery-done" | "task" | "task-done" | "photo" | "photo-done";
+type MarkerState =
+  | "done" | "open" | "mystery" | "mystery-done" | "task" | "task-done"
+  | "photo" | "photo-done" | "photo-pending" | "photo-rejected";
 
 function markerState(c: Challenge): MarkerState {
   if (c.user_checked_in) {
     if (c.is_mystery) return "mystery-done";
     if (c.is_task) return "task-done";
-    if (c.is_photo) return "photo-done";
+    if (c.is_photo) {
+      if (c.photo_submission_status === "rejected") return "photo-rejected";
+      if (c.photo_submission_status === "pending") return "photo-pending";
+      return "photo-done";
+    }
     return "done";
   }
   if (c.is_mystery) return "mystery";
@@ -31,14 +37,16 @@ function markerState(c: Challenge): MarkerState {
 }
 
 const MARKER_STYLE: Record<MarkerState, { bg: string; border: string; text: string; label: string }> = {
-  done:           { bg: "#009a00", border: "#007a00", text: "#fff",    label: "✓" },
-  open:           { bg: "#fff",    border: "#009a00", text: "#009a00", label: "🚴" },
-  mystery:        { bg: "#fff",    border: "#7c3aed", text: "#7c3aed", label: "🧙" },
-  "mystery-done": { bg: "#7c3aed", border: "#5b21b6", text: "#fff",    label: "✓" },
-  task:           { bg: "#fff",    border: "#dc2626", text: "#dc2626", label: "🚴" },
-  "task-done":    { bg: "#dc2626", border: "#991b1b", text: "#fff",    label: "✓" },
-  photo:          { bg: "#fff",    border: "#1a1a1a", text: "#1a1a1a", label: "📷" },
-  "photo-done":   { bg: "#1a1a1a", border: "#000",    text: "#fff",    label: "✓" },
+  done:             { bg: "#009a00", border: "#007a00", text: "#fff",    label: "✓" },
+  open:             { bg: "#fff",    border: "#009a00", text: "#009a00", label: "🚴" },
+  mystery:          { bg: "#fff",    border: "#7c3aed", text: "#7c3aed", label: "🧙" },
+  "mystery-done":   { bg: "#7c3aed", border: "#5b21b6", text: "#fff",    label: "✓" },
+  task:             { bg: "#fff",    border: "#dc2626", text: "#dc2626", label: "🚴" },
+  "task-done":      { bg: "#dc2626", border: "#991b1b", text: "#fff",    label: "✓" },
+  photo:            { bg: "#fff",    border: "#1a1a1a", text: "#1a1a1a", label: "📷" },
+  "photo-done":     { bg: "#1a1a1a", border: "#000",    text: "#fff",    label: "✓" },
+  "photo-pending":  { bg: "#f59e0b", border: "#b45309", text: "#fff",    label: "⏳" },
+  "photo-rejected": { bg: "#dc2626", border: "#991b1b", text: "#fff",    label: "!" },
 };
 
 function ChallengeOverlay({
@@ -113,7 +121,25 @@ function ChallengeOverlay({
                 bis {calcMaxPoints(challenge)} Punkte
               </span>
             )}
-            {done && (
+            {done && challenge.is_photo && challenge.photo_submission_status === "rejected" && (
+              <span className="flex items-center gap-1 font-semibold text-red-600">
+                <Camera className="w-3 h-3" />
+                Foto abgelehnt
+              </span>
+            )}
+            {done && challenge.is_photo && challenge.photo_submission_status === "pending" && (
+              <span className="flex items-center gap-1 font-semibold text-yellow-600">
+                <Camera className="w-3 h-3" />
+                Foto in Prüfung
+              </span>
+            )}
+            {done && challenge.is_photo && !challenge.photo_submission_status && (
+              <span className="flex items-center gap-1 font-semibold text-gray-600">
+                <Camera className="w-3 h-3" />
+                Foto hochladen
+              </span>
+            )}
+            {done && (!challenge.is_photo || challenge.photo_submission_status === "approved") && (
               <span className="flex items-center gap-1 font-semibold" style={{ color: "var(--oz-brand-green)" }}>
                 <CheckCircle2 className="w-3 h-3" />
                 Erledigt
@@ -278,7 +304,7 @@ export function MapPage() {
 
       {/* Legende */}
       <div className="absolute top-4 left-4 bg-white rounded-xl px-3 py-2 shadow-lg text-xs space-y-1.5">
-        {(["open", "task", "mystery", "photo", "done"] as MarkerState[]).map((s) => (
+        {(["open", "task", "mystery", "photo", "photo-rejected", "done"] as MarkerState[]).map((s) => (
           <div key={s} className="flex items-center gap-2">
             <div
               className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
@@ -291,7 +317,7 @@ export function MapPage() {
               {MARKER_STYLE[s].label}
             </div>
             <span className="text-gray-600">
-              {s === "done" ? "Erledigt" : s === "mystery" ? "Mystery Ort" : s === "task" ? "Aufgabe" : s === "photo" ? "Foto-Stop" : "Offen"}
+              {s === "done" ? "Erledigt" : s === "mystery" ? "Mystery Ort" : s === "task" ? "Aufgabe" : s === "photo" ? "Foto-Stop" : s === "photo-rejected" ? "Foto abgelehnt" : "Offen"}
             </span>
           </div>
         ))}
