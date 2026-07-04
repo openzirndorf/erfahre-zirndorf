@@ -11,7 +11,7 @@ from sqlalchemy.orm import aliased, selectinload
 from auth import get_admin_user
 from config import settings
 from database import get_db
-from models import AdminAuditLog, Badge, BadgeRuleType, Challenge, CheckIn, Place, Suggestion, SurveyResponse, User, UserBadge, UserRole
+from models import AdminAuditLog, Badge, BadgeRuleType, Challenge, CheckIn, Place, PhotoSubmission, Suggestion, SurveyResponse, User, UserBadge, UserRole
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -720,6 +720,7 @@ async def delete_user(
         raise HTTPException(status_code=422, detail="Du kannst deinen eigenen Account nicht löschen.")
     await db.execute(delete(UserBadge).where(UserBadge.user_id == user_id))
     await db.execute(delete(CheckIn).where(CheckIn.user_id == user_id))
+    await db.execute(delete(PhotoSubmission).where(PhotoSubmission.user_id == user_id))
     await db.execute(update(AdminAuditLog).where(AdminAuditLog.target_user_id == user.id).values(target_user_id=None))
     await db.execute(update(AdminAuditLog).where(AdminAuditLog.admin_user_id == user.id).values(admin_user_id=None))
     await _log_admin_action(db, admin, "user_delete", details=f"Nutzer gelöscht: #{user.id} {user.display_name}")
@@ -747,6 +748,12 @@ async def reset_user_checkins(
     )
     deleted_count = int(count_result.scalar_one())
     await db.execute(delete(CheckIn).where(and_(*conditions)))
+
+    photo_conditions = [PhotoSubmission.user_id == user_id]
+    if body.challenge_id is not None:
+        photo_conditions.append(PhotoSubmission.challenge_id == body.challenge_id)
+    await db.execute(delete(PhotoSubmission).where(and_(*photo_conditions)))
+
     await _recalculate_user_progress(db, user)
     await _log_admin_action(
         db,

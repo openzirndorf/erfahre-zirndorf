@@ -79,18 +79,32 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
         await conn.execute(text("ALTER TABLE checkins ADD COLUMN flag_reason TEXT"))
 
     # Umfrage
-    await conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS survey_responses (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE SET NULL,
-            q1 VARCHAR,
-            q2 VARCHAR,
-            q3 VARCHAR,
-            q4 VARCHAR,
-            q5 TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )
-    """))
+    if is_postgres:
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS survey_responses (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+                q1 VARCHAR,
+                q2 VARCHAR,
+                q3 VARCHAR,
+                q4 VARCHAR,
+                q5 TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """))
+    else:
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS survey_responses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+                q1 VARCHAR,
+                q2 VARCHAR,
+                q3 VARCHAR,
+                q4 VARCHAR,
+                q5 TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
     survey_columns = await conn.run_sync(existing_columns, "survey_responses")
     if "q4" not in survey_columns:
         await conn.execute(text("ALTER TABLE survey_responses ADD COLUMN q4 VARCHAR"))
@@ -108,15 +122,26 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
     """))
 
     # Vorschläge
-    await conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS suggestions (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            type VARCHAR NOT NULL,
-            text TEXT NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )
-    """))
+    if is_postgres:
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS suggestions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                type VARCHAR NOT NULL,
+                text TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """))
+    else:
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS suggestions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                type VARCHAR NOT NULL,
+                text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
     suggestion_columns = await conn.run_sync(existing_columns, "suggestions")
     if "lat" not in suggestion_columns:
         await conn.execute(text("ALTER TABLE suggestions ADD COLUMN lat FLOAT"))

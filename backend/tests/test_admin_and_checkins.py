@@ -16,10 +16,10 @@ from fastapi.testclient import TestClient  # noqa: E402
 from auth import create_jwt  # noqa: E402
 from database import AsyncSessionLocal  # noqa: E402
 from main import app  # noqa: E402
-from models import Challenge, PendingMagicLink, Place, User, UserRole  # noqa: E402
+from models import Challenge, PendingMagicLink, Place, PhotoSubmission, User, UserRole  # noqa: E402
 
 
-def seed_data():
+def seed_data(is_photo: bool = False):
     import asyncio
 
     async def _seed():
@@ -46,6 +46,7 @@ def seed_data():
                 start_at=datetime.now(UTC) - timedelta(days=1),
                 end_at=datetime.now(UTC) + timedelta(days=1),
                 points=20,
+                is_photo=is_photo,
             )
             db.add(challenge)
             await db.flush()
@@ -221,6 +222,137 @@ def test_flagged_checkin_can_be_reviewed_and_is_audited():
         )
         assert audit.status_code == 200
         assert any(entry["action"] == "checkin_review" for entry in audit.json())
+
+
+def test_photo_stop_reject_then_approve_then_reset_cycle():
+    with TestClient(app) as client:
+        admin_id, user_id, challenge_id, lat, lon = seed_data(is_photo=True)
+        user_token = create_jwt(user_id)
+        admin_token = create_jwt(admin_id)
+
+        # 1. Check-in am Fotostop gibt noch keine Punkte
+        checkin = client.post(
+            "/api/checkins",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={
+                "challenge_id": challenge_id,
+                "position": {"lat": lat, "lon": lon, "accuracy_m": 5},
+                "client_ts": datetime.now(UTC).isoformat(),
+            },
+        )
+        assert checkin.status_code == 200
+        assert checkin.json()["success"] is True
+        assert checkin.json()["photo_required"] is True
+        assert checkin.json()["points_awarded"] == 0
+
+        # 2. Foto einreichen
+        submit = client.post(
+            f"/api/photos/{challenge_id}",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={"image_base64": "data:image/png;base64,AAAA"},
+        )
+        assert submit.status_code == 201
+        assert submit.json()["status"] == "pending"
+
+        pending = client.get(
+            "/api/photos/admin/pending",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert pending.status_code == 200
+        submission_id = pending.json()[0]["id"]
+
+        # 3. Admin lehnt ab -> Nutzer sieht Ablehnung samt Nachricht
+        reject = client.patch(
+            f"/api/photos/admin/{submission_id}/review",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"approved": False, "message": "Bitte das ganze Motiv zeigen."},
+        )
+        assert reject.status_code == 200
+        assert reject.json()["status"] == "rejected"
+
+        detail = client.get(
+            f"/api/challenges/{challenge_id}",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert detail.status_code == 200
+        assert detail.json()["photo_submission_status"] == "rejected"
+        assert detail.json()["photo_admin_message"] == "Bitte das ganze Motiv zeigen."
+
+        # 4. Nutzer reicht erneut ein, Admin nimmt an -> Punkte werden gutgeschrieben
+        resubmit = client.post(
+            f"/api/photos/{challenge_id}",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={"image_base64": "data:image/png;base64,BBBB"},
+        )
+        assert resubmit.status_code == 201
+
+        pending2 = client.get(
+            "/api/photos/admin/pending",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        submission_id_2 = pending2.json()[0]["id"]
+
+        approve = client.patch(
+            f"/api/photos/admin/{submission_id_2}/review",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"approved": True},
+        )
+        assert approve.status_code == 200
+        assert approve.json()["status"] == "approved"
+        assert approve.json()["points_awarded"] == 20
+
+        detail2 = client.get(
+            f"/api/challenges/{challenge_id}",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
+        assert detail2.json()["photo_submission_status"] == "approved"
+
+        # 5. Admin setzt den Stop zurück -> Check-in UND Foto-Einreichung sind weg,
+        #    ein erneutes Einreichen ist wieder möglich (Kernbug: vorher blieb die
+        #    PhotoSubmission "approved" liegen und blockierte den erneuten Test).
+        reset = client.post(
+            f"/api/admin/users/{user_id}/reset-checkins",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"challenge_id": challenge_id},
+        )
+        assert reset.status_code == 200
+        assert reset.json()["deleted_checkins"] == 1
+        assert reset.json()["points"] == 0
+
+        async def _photo_submissions_left():
+            async with AsyncSessionLocal() as db:
+                from sqlalchemy import select as _select
+                result = await db.execute(
+                    _select(PhotoSubmission).where(
+                        PhotoSubmission.user_id == user_id,
+                        PhotoSubmission.challenge_id == challenge_id,
+                    )
+                )
+                return result.scalars().all()
+
+        import asyncio
+        assert asyncio.run(_photo_submissions_left()) == []
+
+        # Zurückgesetzter Fotostop kann wieder komplett neu durchlaufen werden
+        checkin_again = client.post(
+            "/api/checkins",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={
+                "challenge_id": challenge_id,
+                "position": {"lat": lat, "lon": lon, "accuracy_m": 5},
+                "client_ts": datetime.now(UTC).isoformat(),
+            },
+        )
+        assert checkin_again.status_code == 200
+        assert checkin_again.json()["success"] is True
+
+        resubmit_again = client.post(
+            f"/api/photos/{challenge_id}",
+            headers={"Authorization": f"Bearer {user_token}"},
+            json={"image_base64": "data:image/png;base64,CCCC"},
+        )
+        assert resubmit_again.status_code == 201
+        assert resubmit_again.json()["status"] == "pending"
 
 
 def test_admin_user_detail_and_health_status():
