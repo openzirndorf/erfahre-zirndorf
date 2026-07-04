@@ -30,7 +30,6 @@ async def user_ranking(db: AsyncSession = Depends(get_db)):
         .outerjoin(CheckIn, (CheckIn.user_id == User.id) & (CheckIn.success == True))  # noqa: E712
         .group_by(User.id)
         .order_by(User.points.desc(), func.count(CheckIn.id).desc())
-        .limit(50)
     )
     rows = result.all()
     ranking = []
