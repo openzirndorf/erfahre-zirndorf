@@ -52,9 +52,14 @@ const SPONSORS: Sponsor[] = [
     url: "https://www.dersteinbock-zirndorf.de/",
   },
   {
-    name: "Röst Kaffee",
-    description: "Specialty-Kaffee aus eigener Röstung – Röst Kaffee in Oberasbach für Espresso-Fans, mit Barista-Kursen und Kaffeeverkostungen.",
-    url: "https://roestkaffee.de/",
+    name: "Zirndorfer Bräuschank",
+    description: "Gemütliche Braugaststätte mitten in Zirndorf – hausgebrautes Bier und deftige Küche.",
+    url: "https://www.braeuschank.de/",
+  },
+  {
+    name: "Bücherstube Zirndorf",
+    description: "Die inhabergeführte Buchhandlung vor Ort – persönliche Beratung und große Auswahl.",
+    url: "http://www.buecherstube-zirndorf.de/",
   },
   {
     name: "Café Eders",
