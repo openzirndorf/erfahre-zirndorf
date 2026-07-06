@@ -22,17 +22,17 @@ type MarkerState =
 function markerState(c: Challenge): MarkerState {
   if (c.user_checked_in) {
     if (c.is_mystery) return "mystery-done";
-    if (c.is_task) return "task-done";
     if (c.is_photo) {
       if (c.photo_submission_status === "rejected") return "photo-rejected";
       if (c.photo_submission_status === "pending") return "photo-pending";
       return "photo-done";
     }
+    if (c.is_task) return "task-done";
     return "done";
   }
   if (c.is_mystery) return "mystery";
-  if (c.is_task) return "task";
   if (c.is_photo) return "photo";
+  if (c.is_task) return "task";
   return "open";
 }
 

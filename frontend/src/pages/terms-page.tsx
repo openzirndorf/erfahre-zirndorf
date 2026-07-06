@@ -21,7 +21,7 @@ const sections = [
   },
   {
     title: "Preise",
-    text: "Am Ende der Aktion (6. Juni – 12. Juli 2026) werden Preise an die Bestplatzierten vergeben sowie weitere Preise verlost. Die Preise werden von Sponsoren gestiftet. Ein Rechtsanspruch auf einen bestimmten Preis besteht nicht. Die Gewinner werden direkt kontaktiert.",
+    text: "Am Ende der Aktion (6. Juni – 12. Juli 2026) werden Preise an die Bestplatzierten vergeben. Zusätzlich nehmen alle Teilnehmenden mit mindestens 100 Punkten an einer Verlosung weiterer Preise teil, wobei mehr gesammelte Punkte höhere Gewinnchancen bedeuten. Die Preise werden von Sponsoren gestiftet. Ein Rechtsanspruch auf einen bestimmten Preis besteht nicht. Die Gewinner werden direkt kontaktiert.",
   },
   {
     title: "Kein Rechtsanspruch",

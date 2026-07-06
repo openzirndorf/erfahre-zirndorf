@@ -22,7 +22,7 @@ const faq: FaqEntry[] = [
   {
     question: "Kann ich Preise gewinnen?",
     answer:
-      "Ja! Alle Teilnehmer mit mindestens 50 gesammelten Punkten nehmen automatisch an der Verlosung teil – es gibt keine Gewinnvergrößerung durch mehr Punkte. Details zu den Preisen findest du auf der Sponsoren-Seite.",
+      "Ja! Ab 100 gesammelten Punkten nimmst du automatisch an der Verlosung teil. Je mehr Orte du schaffst, desto mehr Punkte hast du – und desto höher stehen deine Gewinnchancen bei der Verlosung. Details zu den Preisen findest du auf der Sponsoren-Seite.",
     link: { label: "Sponsoren und Preise ansehen", to: "/sponsoren" },
   },
   {

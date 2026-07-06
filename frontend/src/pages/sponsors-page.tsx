@@ -90,8 +90,9 @@ export function SponsorsPage() {
             </h2>
           </div>
           <p className="text-sm opacity-90">
-            Die Bestplatzierten erhalten am Ende der Aktion sichere Preise. Zusätzlich werden
-            unter allen Teilnehmerinnen und Teilnehmern mit mindestens 100 Punkten weitere Preise verlost.
+            Die Bestplatzierten erhalten am Ende der Aktion sichere Preise. Zusätzlich verlosen wir
+            unter allen Teilnehmerinnen und Teilnehmern mit mindestens 100 Punkten weitere Preise –
+            wer mehr Orte schafft und mehr Punkte sammelt, hat dabei höhere Gewinnchancen.
           </p>
         </div>
 

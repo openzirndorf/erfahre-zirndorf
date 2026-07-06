@@ -66,7 +66,34 @@ export function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-bold text-gray-900">5. Widerruf und Löschung</h2>
+            <h2 className="font-bold text-gray-900">5. Fotos bei Fotostops</h2>
+            <p>
+              Bei manchen Orten („Fotostops") lädst du freiwillig ein Foto hoch, um deinen
+              Besuch zu bestätigen.
+            </p>
+            <ul className="list-disc pl-4 space-y-1 mt-2">
+              <li>Das Foto wird gespeichert und von unserem Orga-Team gesichtet, um die Teilnahme zu bestätigen.</li>
+              <li>Punkte für den Fotostop gibt es erst nach dieser Freigabe.</li>
+              <li>Bei Ablehnung kannst du ein neues Foto hochladen; das abgelehnte Foto wird dabei ersetzt.</li>
+              <li>Das Foto wird nicht veröffentlicht und nicht an Dritte weitergegeben.</li>
+              <li>Die Löschung erfolgt wie unter Punkt 7 beschrieben oder automatisch, wenn dein Account gelöscht wird.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="font-bold text-gray-900">6. Vorschläge, Umfrage und Support-Anfragen</h2>
+            <p>
+              Über den Menüpunkt „Vorschlagen" kannst du freiwillig Stop- oder
+              Sponsoren-Vorschläge, Ideen oder Support-Anfragen einreichen. Dabei können
+              zusätzlich zum Text auch ein Standort (Koordinaten) und ein Foto angehängt
+              werden. Am Ende der Aktion kann außerdem eine kurze, freiwillige Umfrage zur
+              App ausgefüllt werden. Beide Einreichungen werden deinem Account zugeordnet,
+              damit wir bei Rückfragen antworten können, und nicht an Dritte weitergegeben.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-bold text-gray-900">7. Widerruf und Löschung</h2>
             <p>
               Die Teilnahme ist freiwillig. Zur Löschung deiner Daten genügt eine E-Mail über{" "}
               <a href="https://openzirndorf.de/impressum" className="underline text-green-700">
@@ -77,7 +104,7 @@ export function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-bold text-gray-900">6. Hosting</h2>
+            <h2 className="font-bold text-gray-900">8. Hosting</h2>
             <p>
               Die App wird auf Servern in Europa 🇪🇺 (Paris) betrieben. Die Verbindung
               erfolgt ausschließlich über HTTPS. Alle Daten bleiben in Europa.
