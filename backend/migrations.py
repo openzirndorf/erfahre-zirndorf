@@ -35,6 +35,8 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
         await conn.execute(text("ALTER TABLE users ADD COLUMN referred_by_user_id INTEGER REFERENCES users(id)"))
     if "referral_milestone_paid" not in user_columns:
         await conn.execute(text("ALTER TABLE users ADD COLUMN referral_milestone_paid BOOLEAN NOT NULL DEFAULT false"))
+    if "newsletter_consent" not in user_columns:
+        await conn.execute(text("ALTER TABLE users ADD COLUMN newsletter_consent BOOLEAN NOT NULL DEFAULT false"))
 
     pending_columns = await conn.run_sync(existing_columns, "pending_magic_links")
     if "login_code" not in pending_columns:
