@@ -96,6 +96,7 @@ export interface UserProgress {
   referral_code?: string | null;
   referrals_registered?: number;
   referrals_milestone?: number;
+  newsletter_consent?: boolean;
 }
 
 export interface AuthState {

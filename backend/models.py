@@ -60,6 +60,7 @@ class User(Base):
     referral_code: Mapped[str | None] = mapped_column(String(8), unique=True, nullable=True, index=True)
     referred_by_user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     referral_milestone_paid: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    newsletter_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     checkins: Mapped[list["CheckIn"]] = relationship("CheckIn", back_populates="user")
     badges: Mapped[list["UserBadge"]] = relationship("UserBadge", back_populates="user")

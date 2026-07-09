@@ -532,22 +532,25 @@ export function AdminPage() {
     loadTab("suggestions");
   }
 
-  async function downloadExport() {
+  async function downloadFile(path: string, filename: string) {
     const raw = localStorage.getItem("auth");
     const token = raw ? (JSON.parse(raw) as { token: string }).token : null;
     const base = `${(import.meta as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ?? ""}/api`;
-    const res = await fetch(`${base}/admin/export`, {
+    const res = await fetch(`${base}${path}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    if (!res.ok) { showToast("Export fehlgeschlagen.", "error"); return; }
+    if (!res.ok) { showToast("Download fehlgeschlagen.", "error"); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `erfahre-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  const downloadExport = () => downloadFile("/admin/export", `erfahre-backup-${new Date().toISOString().slice(0, 10)}.json`);
+  const downloadNewsletter = () => downloadFile("/admin/newsletter-export", `newsletter-${new Date().toISOString().slice(0, 10)}.csv`);
 
   async function toggleUserDetail(userId: number) {
     if (openUserId === userId) {
@@ -744,6 +747,14 @@ export function AdminPage() {
               >
                 <ClipboardList className="w-4 h-4" />
                 DB-Export herunterladen
+              </button>
+              <button
+                type="button"
+                onClick={downloadNewsletter}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold bg-white shadow-sm text-gray-700 hover:bg-gray-50"
+              >
+                <ClipboardList className="w-4 h-4" />
+                Newsletter-Liste (CSV)
               </button>
             </div>
           )}

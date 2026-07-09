@@ -143,6 +143,10 @@ export async function adminReviewPhoto(submissionId: number, approved: boolean, 
   });
 }
 
+export async function updateNewsletterConsent(consent: boolean): Promise<void> {
+  await request("/users/me/newsletter", { method: "PATCH", body: JSON.stringify({ consent }) });
+}
+
 // Admin
 export async function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   return request(`/admin${path}`, options);

@@ -88,6 +88,11 @@ const faq: FaqEntry[] = [
       "Die Rangliste zeigt alle Teilnehmer sortiert nach gesammelten Punkten. Bei gleicher Punktzahl erhalten mehrere Personen denselben Rang. Du siehst deinen eigenen Eintrag farblich hervorgehoben.",
   },
   {
+    question: "Warum erhalten Foto-Stops keine Extrapunkte für den ersten Check-in?",
+    answer:
+      "Foto-Stops vergeben keinen 5-Punkte-Bonus für den ersten Einchecker. Das ist ein bekannter Fehler, der uns von Veronica gemeldet wurde – herzlichen Dank dafür! Aus Fairnessgründen gegenüber allen bisherigen Teilnehmerinnen und Teilnehmern wird dieser Fehler nicht rückwirkend korrigiert.",
+  },
+  {
     question: "Wer steckt dahinter?",
     answer:
       "Erfahre Zirndorf ist ein Projekt von OpenZirndorf – einer offenen, ehrenamtlichen Initiative für digitale Beteiligung und smarte Stadtentwicklung in Zirndorf.",

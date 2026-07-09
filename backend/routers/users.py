@@ -30,6 +30,7 @@ class UserProgress(BaseModel):
     referral_code: str | None = None
     referrals_registered: int = 0
     referrals_milestone: int = 0
+    newsletter_consent: bool = False
 
 
 @router.get("/me/progress", response_model=UserProgress)
@@ -80,7 +81,21 @@ async def my_progress(
         referral_code=current_user.referral_code,
         referrals_registered=referrals_row.total,
         referrals_milestone=referrals_row.milestone,
+        newsletter_consent=current_user.newsletter_consent,
     )
+
+
+class NewsletterConsentBody(BaseModel):
+    consent: bool
+
+
+@router.patch("/me/newsletter", status_code=status.HTTP_204_NO_CONTENT)
+async def update_newsletter_consent(
+    body: NewsletterConsentBody,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.newsletter_consent = body.consent
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

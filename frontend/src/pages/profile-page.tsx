@@ -1,8 +1,8 @@
-import { Award, Bike, Copy, ExternalLink, LogIn, MapPin, MessageCircle, Star, Trash2, UserPlus } from "lucide-react";
+import { Award, Bike, Bell, Copy, ExternalLink, Gift, LogIn, MapPin, MessageCircle, Star, Trash2, UserPlus } from "lucide-react";
 import { ShareButton } from "../components/share-button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch } from "../api/client";
+import { apiFetch, updateNewsletterConsent } from "../api/client";
 import { fetchMyProgress } from "../api/client";
 import { OzFooter } from "../components/oz-footer";
 import type { AuthState, UserProgress } from "../types";
@@ -59,6 +59,7 @@ export function ProfilePage() {
   const [deleting, setDeleting] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
   const auth = getAuth();
 
   async function handleDeleteAccount() {
@@ -83,7 +84,7 @@ export function ProfilePage() {
   useEffect(() => {
     if (!auth) { setLoading(false); return; }
     fetchMyProgress()
-      .then(setProgress)
+      .then((p) => { setProgress(p); setNewsletterConsent(p.newsletter_consent ?? false); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -331,11 +332,26 @@ export function ProfilePage() {
           );
         })()}
 
+        {/* Verlosungshinweis */}
+        {progress.points >= 100 && (
+          <div className="rounded-2xl p-4 flex items-start gap-3" style={{ background: "#fefce8", border: "1px solid #fde68a" }}>
+            <Gift className="w-5 h-5 shrink-0 mt-0.5 text-yellow-600" />
+            <div>
+              <p className="text-sm font-bold text-yellow-800">Du nimmst an der Verlosung teil!</p>
+              <p className="text-xs mt-0.5 text-yellow-700 leading-relaxed">
+                Gewinnübergabe: <strong>Montag, 13. Juli · 19:30 Uhr · Hotel Knorz.</strong>{" "}
+                Preise müssen innerhalb von 4 Wochen abgeholt werden.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Einstellungen */}
         <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
           <h2 className="font-bold text-base mb-3" style={{ fontFamily: "var(--oz-font-heading)" }}>
             Einstellungen
           </h2>
+          <div className="space-y-2">
           <button
             type="button"
             onClick={toggleLocationAuto}
@@ -363,6 +379,39 @@ export function ProfilePage() {
               />
             </div>
           </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const next = !newsletterConsent;
+              setNewsletterConsent(next);
+              try { await updateNewsletterConsent(next); } catch { setNewsletterConsent(!next); }
+            }}
+            className="w-full flex items-center justify-between gap-3 rounded-xl p-3 transition-colors"
+            style={{ background: "var(--oz-bg-surface)" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: newsletterConsent ? "var(--oz-brand-green-light)" : "#f3f4f6" }}>
+                <Bell className="w-4 h-4" style={{ color: newsletterConsent ? "var(--oz-brand-green)" : "#9ca3af" }} />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-gray-800">Über zukünftige Aktionen informieren</p>
+                <p className="text-xs text-gray-500">
+                  {newsletterConsent ? "Du wirst per E-Mail benachrichtigt" : "Kein Newsletter – jederzeit änderbar"}
+                </p>
+              </div>
+            </div>
+            <div
+              className="w-11 h-6 rounded-full relative shrink-0 transition-colors duration-200"
+              style={{ background: newsletterConsent ? "var(--oz-brand-green)" : "#d1d5db" }}
+            >
+              <div
+                className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                style={{ transform: newsletterConsent ? "translateX(20px)" : "translateX(2px)" }}
+              />
+            </div>
+          </button>
+          </div>
         </div>
 
         <button

@@ -978,6 +978,27 @@ async def export_db(
     )
 
 
+@router.get("/newsletter-export")
+async def newsletter_export(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    """CSV mit Nickname + E-Mail aller Nutzer, die dem Newsletter zugestimmt haben."""
+    rows = (await db.execute(
+        select(User.display_name, User.email)
+        .where(User.newsletter_consent == True)  # noqa: E712
+        .order_by(User.display_name)
+    )).all()
+    lines = ["Anzeigename,E-Mail"] + [f"{r.display_name},{r.email}" for r in rows]
+    content = "\n".join(lines)
+    filename = f"newsletter_{datetime.now(UTC).strftime('%Y%m%d')}.csv"
+    return StreamingResponse(
+        iter([content]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/suggestions")
 async def list_suggestions(
     db: AsyncSession = Depends(get_db),

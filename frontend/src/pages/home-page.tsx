@@ -1,4 +1,4 @@
-import { Bike, Camera, CheckCircle2, Clock, Gift, LayoutList, Lock } from "lucide-react";
+import { Bike, Camera, CheckCircle2, Clock, Gift, LayoutList, Lock, MapPin, Trophy } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchChallenges, fetchTodayChallenges } from "../api/client";
@@ -7,9 +7,11 @@ import { OzFooter } from "../components/oz-footer";
 import { UpdateNotifier, useUpdateNotifier } from "../components/update-notifier";
 import { type Challenge, calcMaxPoints } from "../types";
 
-const EVENT_START = new Date("2026-06-06T08:00:00");
-const EVENT_END   = new Date("2026-07-12T23:59:59");
-const TOTAL_DAYS  = 37;
+const EVENT_START      = new Date("2026-06-06T08:00:00");
+const EVENT_END        = new Date("2026-07-12T23:59:59");
+const TOTAL_DAYS       = 37;
+const LAST_STOP_END    = new Date("2026-07-12T15:00:00"); // Sonntag 14 Uhr, Show bis 15 Uhr
+const CEREMONY_END     = new Date("2026-07-13T22:00:00"); // Montag 19:30 Uhr
 
 function useEventState() {
   const now = new Date();
@@ -200,6 +202,37 @@ export function HomePage() {
             </p>
           </div>
         </Link>
+
+        {/* Letzter Stop – Sonntag 12. Juli 14 Uhr */}
+        {new Date() < LAST_STOP_END && (
+          <div className="rounded-2xl overflow-hidden mb-4" style={{ border: "2px solid #dc2626" }}>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ background: "#dc2626" }}>
+              <MapPin className="w-4 h-4 text-white shrink-0" />
+              <p className="text-sm font-bold text-white">Letzter Special-Stop · Sonntag 14:00 Uhr</p>
+            </div>
+            <div className="bg-white px-4 py-3">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Die ersten <strong>5 Personen</strong>, die die Aufgabe lösen, erhalten eine Überraschung.
+                Wir sind nicht dauerhaft vor Ort – es lohnt sich, schnell zu sein!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Gewinnübergabe – Montag 13. Juli 19:30 Uhr */}
+        {new Date() < CEREMONY_END && (
+          <div className="rounded-2xl overflow-hidden mb-4" style={{ border: "2px solid #7c3aed" }}>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ background: "#7c3aed" }}>
+              <Trophy className="w-4 h-4 text-white shrink-0" />
+              <p className="text-sm font-bold text-white">Gewinnübergabe · Montag, 13. Juli · 19:30 Uhr</p>
+            </div>
+            <div className="bg-white px-4 py-3">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <strong>Hotel Knorz, Zirndorf.</strong> Alle Preise müssen innerhalb von 4 Wochen abgeholt werden.
+              </p>
+            </div>
+          </div>
+        )}
 
         {notifier.show && <UpdateNotifier onDone={notifier.dismiss} />}
 
