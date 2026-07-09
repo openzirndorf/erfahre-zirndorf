@@ -72,6 +72,7 @@ interface AdminUser {
   referral_code?: string | null;
   referred_by_display_name?: string | null;
   referrals_count?: number;
+  newsletter_consent?: boolean;
 }
 
 interface FlaggedCheckIn {
@@ -313,6 +314,8 @@ export function AdminPage() {
   const [placeDraft, setPlaceDraft] = useState<Partial<Place>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [filterNewsletter, setFilterNewsletter] = useState(false);
 
   // New place form
   const [newPlace, setNewPlace] = useState({
@@ -1060,7 +1063,30 @@ export function AdminPage() {
 
           {tab === "users" && (
             <div className="space-y-3">
-              {users.map((user) => {
+              {/* Search + Newsletter-Filter */}
+              <div className="flex gap-2">
+                <input
+                  type="search"
+                  placeholder="Name oder E-Mail suchen …"
+                  className={`${inputCls} flex-1`}
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFilterNewsletter((v) => !v)}
+                  className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold border transition-colors ${filterNewsletter ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200"}`}
+                >
+                  Newsletter
+                </button>
+              </div>
+
+              {users.filter((u) => {
+                const q = userSearch.trim().toLowerCase();
+                if (q && !u.display_name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+                if (filterNewsletter && !u.newsletter_consent) return false;
+                return true;
+              }).map((user) => {
                 const draft = editingUsers[user.id] ?? user;
                 return (
                   <div key={user.id} className={`bg-white rounded-2xl p-4 shadow-sm border ${user.is_blocked ? "border-red-200" : "border-transparent"}`}>
@@ -1080,11 +1106,18 @@ export function AdminPage() {
                           </p>
                         )}
                       </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${user.is_blocked ? "bg-red-100 text-red-700" : user.role === "admin" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
-                      >
-                        {user.is_blocked ? "gesperrt" : user.role === "admin" ? "Admin" : "Teilnehmer"}
-                      </span>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${user.is_blocked ? "bg-red-100 text-red-700" : user.role === "admin" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                        >
+                          {user.is_blocked ? "gesperrt" : user.role === "admin" ? "Admin" : "Teilnehmer"}
+                        </span>
+                        {user.newsletter_consent && (
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-700">
+                            Newsletter
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">

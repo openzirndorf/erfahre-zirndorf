@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 
-const STORAGE_KEY = "notifier_v3_dismissed";
+const STORAGE_KEY = "notifier_v4_dismissed";
 
 export function useUpdateNotifier() {
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(STORAGE_KEY) === "1");
@@ -37,30 +37,27 @@ export function UpdateNotifier({ onDone }: Props) {
       </div>
 
       <div className="px-4 py-4 space-y-3 text-sm text-gray-700 leading-relaxed">
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
-          <p className="font-bold text-amber-800 mb-0.5">🏆 Gewinnübergabe</p>
-          <p className="text-amber-700 text-xs">
-            Montag, 13. Juli · 19:30 Uhr · <span className="font-semibold">Hotel Knorz</span>
-            <br />Alle Bestplatzierten und Gewinner werden direkt kontaktiert.
+        {/* Newsletter-Consent Hinweis */}
+        <div className="rounded-xl bg-blue-50 border border-blue-200 px-3 py-2.5">
+          <p className="font-bold text-blue-800 mb-0.5">📬 Über zukünftige Aktionen informiert bleiben</p>
+          <p className="text-blue-700 text-xs leading-relaxed">
+            Im <span className="font-semibold">Profil</span> kannst du zustimmen, dass wir dich per E-Mail über zukünftige Aktionen informieren dürfen. Einwilligung jederzeit widerrufbar.
           </p>
         </div>
 
-        <p className="font-semibold text-gray-800">Neu in dieser Version:</p>
-
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <span className="shrink-0">✅</span>
-            <p><span className="font-semibold">„Vorschlagen"-Bereich</span>: Stops, Sponsoren, Ideen – und jetzt auch <span className="font-semibold">Support-Anfragen</span> direkt aus der App einreichen 💡</p>
-          </div>
+        {/* Foto-Stop Bug */}
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
+          <p className="font-bold text-amber-800 mb-0.5">⚠️ Bekannter Fehler: Foto-Stops & Extrapunkte</p>
+          <p className="text-amber-700 text-xs leading-relaxed">
+            Foto-Stops vergeben keinen 5-Punkte-Bonus für den ersten Check-in. Herzlichen Dank an <span className="font-semibold">Veronica</span> für den Hinweis! Aus Fairnessgründen gegenüber allen bisherigen Teilnehmerinnen und Teilnehmern wird dieser Fehler nicht rückwirkend korrigiert.
+          </p>
         </div>
 
-        <div
-          className="rounded-xl px-3 py-3 text-white"
-          style={{ background: "linear-gradient(135deg, var(--oz-brand-green) 0%, #007a00 100%)" }}
-        >
-          <p className="font-bold mb-1">🎁 Freunde einladen & Punkte sammeln</p>
-          <p className="text-xs opacity-90 leading-relaxed">
-            Dein persönlicher Einladungscode wartet im Profil! Wer sich mit deinem Code anmeldet, bringt dir <span className="font-semibold">20 Punkte</span> – und sobald dein Geworbener 100 Punkte erreicht, gibt es nochmal <span className="font-semibold">40 Punkte</span> obendrauf. Bis zu 5 Einladungen möglich.
+        {/* Challenge-Anzahl Hinweis */}
+        <div className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2.5">
+          <p className="font-bold text-gray-800 mb-0.5">ℹ️ Challengeanzahl ggf. nicht korrekt</p>
+          <p className="text-gray-600 text-xs leading-relaxed">
+            Die angezeigte Anzahl abgeschlossener Challenges kann in Einzelfällen abweichen. Die <span className="font-semibold">Punkte sind davon nicht betroffen</span> und werden korrekt gewertet.
           </p>
         </div>
       </div>

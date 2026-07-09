@@ -164,6 +164,7 @@ class UserOut(BaseModel):
     referral_code: str | None = None
     referred_by_display_name: str | None = None
     referrals_count: int = 0
+    newsletter_consent: bool = False
 
     model_config = {"from_attributes": True}
 
