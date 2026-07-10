@@ -66,6 +66,11 @@ const SPONSORS: Sponsor[] = [
     description: "Café zum Wohlfühlen – hausgemachte Köstlichkeiten, frischer Kaffee und Frühstücksbuffet am Wochenende.",
     url: "https://cafe-eders.de/",
   },
+  {
+    name: "GRUWEN BoXX",
+    description: "24/7 geöffneter Verkaufsraum ohne Personal in der Siegfriedstraße 2 – regionale Produkte von Direktvermarktern aus dem Landkreis Fürth, bezahlt per Handy oder Karte.",
+    url: "https://www.gruwen.de/",
+  },
 ];
 
 export function SponsorsPage() {
