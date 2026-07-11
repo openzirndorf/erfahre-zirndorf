@@ -2,10 +2,10 @@ import { Award, Bike, Bell, Copy, ExternalLink, Gift, LogIn, MapPin, MessageCirc
 import { ShareButton } from "../components/share-button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch, updateNewsletterConsent, submitRating, fetchMyPrizes, claimPrize } from "../api/client";
+import { apiFetch, updateNewsletterConsent, submitRating } from "../api/client";
 import { fetchMyProgress } from "../api/client";
 import { OzFooter } from "../components/oz-footer";
-import type { AuthState, UserProgress, UserPrize } from "../types";
+import type { AuthState, UserProgress } from "../types";
 
 const MILESTONES = [1, 5, 10, 15, 25];
 
@@ -63,9 +63,6 @@ export function ProfilePage() {
   const [myRating, setMyRating] = useState<number | null>(null);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
-  const [prizes, setPrizes] = useState<UserPrize[]>([]);
-  const [claimConfirm, setClaimConfirm] = useState<number | null>(null);
-  const [claiming, setClaiming] = useState<number | null>(null);
   const auth = getAuth();
 
   async function handleDeleteAccount() {
@@ -93,7 +90,6 @@ export function ProfilePage() {
       .then((p) => { setProgress(p); setNewsletterConsent(p.newsletter_consent ?? false); setMyRating(p.my_rating ?? null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-    fetchMyPrizes().then(setPrizes).catch(() => {});
   }, []);
 
   if (!auth) {
@@ -349,91 +345,6 @@ export function ProfilePage() {
                 Gewinnübergabe: <strong>Montag, 13. Juli · 19:30 Uhr · Hotel Knorz.</strong>{" "}
                 Preise müssen innerhalb von 4 Wochen abgeholt werden.
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* Gewinne */}
-        {prizes.length > 0 && (
-          <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "var(--oz-shadow)" }}>
-            <div className="px-5 py-3 flex items-center gap-2" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)" }}>
-              <Gift className="w-4 h-4 text-white shrink-0" />
-              <p className="text-white text-sm font-bold">Deine Gewinne</p>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {prizes.map((prize) => {
-                const confirmed = !!prize.admin_confirmed_at;
-                const claimed = !!prize.user_claimed_at;
-                const isConfirming = claimConfirm === prize.id;
-                return (
-                  <div key={prize.id} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3 mb-1">
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm text-gray-900">{prize.title}</p>
-                        {prize.sponsor && <p className="text-xs text-gray-400">von {prize.sponsor}</p>}
-                        {prize.description && <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{prize.description}</p>}
-                      </div>
-                      {confirmed ? (
-                        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700">Abgeholt ✓</span>
-                      ) : claimed ? (
-                        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700">Warte auf Bestätigung</span>
-                      ) : (
-                        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700">Abzuholen</span>
-                      )}
-                    </div>
-
-                    {!claimed && !confirmed && !isConfirming && (
-                      <button
-                        type="button"
-                        onClick={() => setClaimConfirm(prize.id)}
-                        className="mt-2 w-full rounded-xl py-2 text-sm font-bold text-white"
-                        style={{ background: "#7c3aed" }}
-                      >
-                        Gewinn abholen
-                      </button>
-                    )}
-
-                    {isConfirming && (
-                      <div className="mt-2 rounded-xl p-3" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
-                        <p className="text-xs font-bold text-red-800 mb-1">⚠️ Nur vor Ort klicken!</p>
-                        <p className="text-xs text-red-700 leading-relaxed mb-3">
-                          Dieser Button bestätigt, dass du deinen Gewinn gerade persönlich abholst.
-                          <strong> Wenn du ihn vorab anklickst, erlischt dein Anspruch.</strong>
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setClaimConfirm(null)}
-                            className="flex-1 rounded-xl py-2 text-xs font-bold bg-gray-100 text-gray-700"
-                          >
-                            Abbrechen
-                          </button>
-                          <button
-                            type="button"
-                            disabled={claiming === prize.id}
-                            onClick={async () => {
-                              setClaiming(prize.id);
-                              try {
-                                await claimPrize(prize.id);
-                                setPrizes((prev) => prev.map((p) =>
-                                  p.id === prize.id ? { ...p, user_claimed_at: new Date().toISOString() } : p
-                                ));
-                                setClaimConfirm(null);
-                              } finally {
-                                setClaiming(null);
-                              }
-                            }}
-                            className="flex-1 rounded-xl py-2 text-xs font-bold text-white"
-                            style={{ background: "#dc2626" }}
-                          >
-                            {claiming === prize.id ? "…" : "Ja, ich bin vor Ort"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
             </div>
           </div>
         )}

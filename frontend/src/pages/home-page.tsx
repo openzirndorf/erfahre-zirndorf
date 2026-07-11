@@ -1,11 +1,15 @@
 import { Bike, Camera, CheckCircle2, Clock, Gift, LayoutList, Lock, MapPin, Trophy } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchChallenges, fetchTodayChallenges } from "../api/client";
+import { fetchChallenges, fetchTodayChallenges, fetchMyPrizes, claimPrize } from "../api/client";
 import { ChallengeCard } from "../components/challenge-card";
 import { OzFooter } from "../components/oz-footer";
 import { UpdateNotifier, useUpdateNotifier } from "../components/update-notifier";
-import { type Challenge, calcMaxPoints } from "../types";
+import { type Challenge, calcMaxPoints, type UserPrize } from "../types";
+
+function getAuth() {
+  try { return JSON.parse(localStorage.getItem("auth") ?? "null"); } catch { return null; }
+}
 
 const EVENT_START      = new Date("2026-06-06T08:00:00");
 const EVENT_END        = new Date("2026-07-12T23:59:59");
@@ -101,9 +105,13 @@ export function HomePage() {
   const [allChallenges, setAllChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"current" | "all">("current");
+  const [prizes, setPrizes] = useState<UserPrize[]>([]);
+  const [claimConfirm, setClaimConfirm] = useState<number | null>(null);
+  const [claiming, setClaiming] = useState<number | null>(null);
   const event = useEventState();
 
   useEffect(() => {
+    if (getAuth()) fetchMyPrizes().then(setPrizes).catch(() => {});
     setLoading(true);
     Promise.all([fetchTodayChallenges(), fetchChallenges()])
       .then(([today, all]) => {
@@ -230,6 +238,98 @@ export function HomePage() {
               <p className="text-sm text-gray-700 leading-relaxed">
                 <strong>Hotel Knorz, Zirndorf.</strong> Alle Preise müssen innerhalb von 4 Wochen abgeholt werden.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Persönliche Gewinne */}
+        {prizes.length > 0 && (
+          <div className="rounded-2xl overflow-hidden mb-4" style={{ border: "2px solid #7c3aed" }}>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ background: "#7c3aed" }}>
+              <Gift className="w-4 h-4 text-white shrink-0" />
+              <p className="text-sm font-bold text-white">
+                🎁 Du hast {prizes.length === 1 ? "einen Gewinn" : `${prizes.length} Gewinne`}!
+              </p>
+            </div>
+            <div className="bg-white divide-y divide-gray-100">
+              {prizes.map((prize) => {
+                const confirmed = !!prize.admin_confirmed_at;
+                const claimed = !!prize.user_claimed_at;
+                const isConfirming = claimConfirm === prize.id;
+                return (
+                  <div key={prize.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-gray-900">{prize.title}</p>
+                        {prize.sponsor && <p className="text-xs text-gray-400">von {prize.sponsor}</p>}
+                        {prize.description && <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{prize.description}</p>}
+                      </div>
+                      {confirmed ? (
+                        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700">Abgeholt ✓</span>
+                      ) : claimed ? (
+                        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700">Bestätigung ausstehend</span>
+                      ) : (
+                        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700">Abzuholen</span>
+                      )}
+                    </div>
+
+                    {!claimed && !confirmed && !isConfirming && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500 mb-2">
+                          Bitte bis spätestens <strong>2. August</strong> zu den regulären Öffnungszeiten abholen – danach verfällt der Anspruch.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setClaimConfirm(prize.id)}
+                          className="w-full rounded-xl py-2 text-sm font-bold text-white"
+                          style={{ background: "#7c3aed" }}
+                        >
+                          Gewinn abholen
+                        </button>
+                      </div>
+                    )}
+
+                    {isConfirming && (
+                      <div className="mt-2 rounded-xl p-3" style={{ background: "#fef2f2", border: "1px solid #fecaca" }}>
+                        <p className="text-xs font-bold text-red-800 mb-1">⚠️ Nur vor Ort klicken!</p>
+                        <p className="text-xs text-red-700 leading-relaxed mb-3">
+                          Dieser Button bestätigt, dass du deinen Gewinn gerade persönlich abholst.
+                          <strong> Wenn du ihn vorab anklickst, erlischt dein Anspruch.</strong>
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setClaimConfirm(null)}
+                            className="flex-1 rounded-xl py-2 text-xs font-bold bg-gray-100 text-gray-700"
+                          >
+                            Abbrechen
+                          </button>
+                          <button
+                            type="button"
+                            disabled={claiming === prize.id}
+                            onClick={async () => {
+                              setClaiming(prize.id);
+                              try {
+                                await claimPrize(prize.id);
+                                setPrizes((prev) => prev.map((p) =>
+                                  p.id === prize.id ? { ...p, user_claimed_at: new Date().toISOString() } : p
+                                ));
+                                setClaimConfirm(null);
+                              } finally {
+                                setClaiming(null);
+                              }
+                            }}
+                            className="flex-1 rounded-xl py-2 text-xs font-bold text-white"
+                            style={{ background: "#dc2626" }}
+                          >
+                            {claiming === prize.id ? "…" : "Ja, ich bin vor Ort"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
