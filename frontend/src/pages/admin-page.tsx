@@ -296,6 +296,10 @@ export function AdminPage() {
   const [flaggedCheckIns, setFlaggedCheckIns] = useState<FlaggedCheckIn[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [surveyResults, setSurveyResults] = useState<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>([]);
+  const [timeline, setTimeline] = useState<Array<{
+    date: string; new_users: number; new_checkins: number; new_challenges: number;
+    cum_users: number; cum_checkins: number;
+  }>>([]);
   const [eventAnalysis, setEventAnalysis] = useState<{
     fastest: Record<string, Array<{ challenge_id: number; challenge_title: string; display_name: string; checked_in_at: string; seconds_after_start: number }>>;
     total_quiz_challenges: number;
@@ -341,16 +345,18 @@ export function AdminPage() {
     setError(null);
     try {
       if (t === "stats") {
-        const [loadedStats, loadedHealth, loadedSurvey, loadedAnalysis] = await Promise.all([
+        const [loadedStats, loadedHealth, loadedSurvey, loadedAnalysis, loadedTimeline] = await Promise.all([
           adminFetch<Stats>("/stats"),
           adminFetch<HealthStatus>("/health-status"),
           adminFetch<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>("/survey/results").catch(() => []),
           adminFetch<typeof eventAnalysis>("/event-analysis").catch(() => null),
+          adminFetch<{ days: typeof timeline }>("/timeline").then((r) => r.days).catch(() => []),
         ]);
         setStats(loadedStats);
         setHealth(loadedHealth);
         setSurveyResults(loadedSurvey);
         setEventAnalysis(loadedAnalysis);
+        setTimeline(loadedTimeline);
       }
       if (t === "users") {
         const [loaded, loadedChallenges] = await Promise.all([
@@ -663,6 +669,84 @@ export function AdminPage() {
                   </div>
                 </div>
               )}
+
+              {/* Verlauf */}
+              {timeline.length > 1 && (() => {
+                const W = 420, H = 120, PAD = { t: 8, r: 8, b: 24, l: 32 };
+                const iw = W - PAD.l - PAD.r;
+                const ih = H - PAD.t - PAD.b;
+                const n = timeline.length;
+
+                function polyline(values: number[], color: string, maxVal: number) {
+                  if (maxVal === 0) return null;
+                  const pts = values.map((v, i) =>
+                    `${PAD.l + (i / (n - 1)) * iw},${PAD.t + ih - (v / maxVal) * ih}`
+                  ).join(" ");
+                  return <polyline key={color} points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />;
+                }
+
+                const maxCumUsers    = Math.max(...timeline.map((d) => d.cum_users));
+                const maxCumCheckins = Math.max(...timeline.map((d) => d.cum_checkins));
+                const maxNew         = Math.max(...timeline.map((d) => Math.max(d.new_checkins, d.new_users)));
+
+                // x-axis labels: first, mid, last
+                const labelIdxs = [0, Math.floor(n / 2), n - 1];
+
+                return (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <p className="text-sm font-bold mb-1">Verlauf über die Aktionslaufzeit</p>
+                    <div className="flex gap-3 text-[10px] text-gray-500 mb-2 flex-wrap">
+                      <span><span style={{ color: "var(--oz-brand-green)" }}>──</span> Gesamt-Checkins</span>
+                      <span><span style={{ color: "#6366f1" }}>──</span> Gesamt-User</span>
+                      <span><span style={{ color: "#f59e0b" }}>──</span> Tägl. Checkins</span>
+                    </div>
+                    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ overflow: "visible" }}>
+                      {/* Grid lines */}
+                      {[0, 0.5, 1].map((f) => (
+                        <line key={f} x1={PAD.l} x2={W - PAD.r}
+                          y1={PAD.t + ih * (1 - f)} y2={PAD.t + ih * (1 - f)}
+                          stroke="#e5e7eb" strokeWidth="1" />
+                      ))}
+                      {/* Cumulative check-ins (green) */}
+                      {polyline(timeline.map((d) => d.cum_checkins), "var(--oz-brand-green)", maxCumCheckins)}
+                      {/* Cumulative users (indigo) */}
+                      {polyline(timeline.map((d) => d.cum_users), "#6366f1", maxCumUsers)}
+                      {/* Daily check-ins (amber) */}
+                      {polyline(timeline.map((d) => d.new_checkins), "#f59e0b", maxNew)}
+                      {/* Y-axis labels */}
+                      {[0, 1].map((f) => (
+                        <text key={f} x={PAD.l - 4} y={PAD.t + ih * (1 - f) + 4}
+                          textAnchor="end" fontSize="9" fill="#9ca3af">
+                          {f === 0 ? "0" : maxCumCheckins}
+                        </text>
+                      ))}
+                      {/* X-axis labels */}
+                      {labelIdxs.map((i) => (
+                        <text key={i}
+                          x={PAD.l + (i / (n - 1)) * iw}
+                          y={H - 4}
+                          textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
+                          fontSize="9" fill="#9ca3af">
+                          {timeline[i].date.slice(5)}
+                        </text>
+                      ))}
+                    </svg>
+                    {/* Summary numbers */}
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {[
+                        { label: "Gesamt-User", value: maxCumUsers, color: "#6366f1" },
+                        { label: "Gesamt-Checkins", value: maxCumCheckins, color: "var(--oz-brand-green)" },
+                        { label: "Peak-Tag (Checkins)", value: maxNew, color: "#f59e0b" },
+                      ].map((s) => (
+                        <div key={s.label} className="rounded-xl bg-gray-50 p-2 text-center">
+                          <p className="text-lg font-black" style={{ color: s.color }}>{s.value}</p>
+                          <p className="text-[10px] text-gray-500 leading-tight">{s.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Tagesaktivität */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">

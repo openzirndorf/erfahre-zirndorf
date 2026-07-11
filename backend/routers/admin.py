@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -1302,3 +1302,78 @@ async def delete_prize(
     if not prize:
         raise HTTPException(status_code=404, detail="Nicht gefunden")
     await db.delete(prize)
+
+
+# ── Timeline ────────────────────────────────────────────────────────────────
+
+@router.get("/timeline")
+async def timeline(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    # Daily new users
+    user_rows = (await db.execute(
+        select(
+            func.date(User.created_at).label("d"),
+            func.count(User.id).label("n"),
+        ).group_by(func.date(User.created_at)).order_by(func.date(User.created_at))
+    )).all()
+
+    # Daily successful check-ins
+    checkin_rows = (await db.execute(
+        select(
+            func.date(CheckIn.checked_in_at).label("d"),
+            func.count(CheckIn.id).label("n"),
+        )
+        .where(CheckIn.success == True)  # noqa: E712
+        .group_by(func.date(CheckIn.checked_in_at))
+        .order_by(func.date(CheckIn.checked_in_at))
+    )).all()
+
+    # Daily unlocked challenges (by start_at, only active)
+    challenge_rows = (await db.execute(
+        select(
+            func.date(Challenge.start_at).label("d"),
+            func.count(Challenge.id).label("n"),
+        )
+        .where(Challenge.is_active == True)  # noqa: E712
+        .group_by(func.date(Challenge.start_at))
+        .order_by(func.date(Challenge.start_at))
+    )).all()
+
+    # Build date range from first event to today
+    all_dates = (
+        {str(r.d) for r in user_rows}
+        | {str(r.d) for r in checkin_rows}
+        | {str(r.d) for r in challenge_rows}
+    )
+    if not all_dates:
+        return {"days": []}
+
+    start = date.fromisoformat(min(all_dates))
+    end   = date.fromisoformat(max(all_dates))
+
+    users_by_day    = {str(r.d): r.n for r in user_rows}
+    checkins_by_day = {str(r.d): r.n for r in checkin_rows}
+    challenges_by_day = {str(r.d): r.n for r in challenge_rows}
+
+    days = []
+    cum_users = cum_checkins = 0
+    d = start
+    while d <= end:
+        ds = d.isoformat()
+        new_users    = users_by_day.get(ds, 0)
+        new_checkins = checkins_by_day.get(ds, 0)
+        cum_users    += new_users
+        cum_checkins += new_checkins
+        days.append({
+            "date": ds,
+            "new_users": new_users,
+            "new_checkins": new_checkins,
+            "new_challenges": challenges_by_day.get(ds, 0),
+            "cum_users": cum_users,
+            "cum_checkins": cum_checkins,
+        })
+        d += timedelta(days=1)
+
+    return {"days": days}
