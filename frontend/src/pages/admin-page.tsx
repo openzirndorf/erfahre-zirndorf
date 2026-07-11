@@ -329,6 +329,8 @@ export function AdminPage() {
   const [filterNewsletter, setFilterNewsletter] = useState(false);
   const [prizes, setPrizes] = useState<AdminPrize[]>([]);
   const [newPrize, setNewPrize] = useState({ user_id: "", title: "", description: "", sponsor: "", notes: "" });
+  const [prizeUserSearch, setPrizeUserSearch] = useState("");
+  const [prizeUserOpen, setPrizeUserOpen] = useState(false);
 
   // New place form
   const [newPlace, setNewPlace] = useState({
@@ -381,7 +383,14 @@ export function AdminPage() {
       if (t === "suggestions") setSuggestions(await adminFetch<typeof suggestions>("/suggestions").catch(() => []));
       if (t === "upcoming") setUpcoming(await adminFetch<AdminChallenge[]>("/challenges/upcoming"));
       if (t === "photos") setPendingPhotos(await adminFetchPendingPhotos<PhotoSubmissionEntry[]>());
-      if (t === "prizes") setPrizes(await adminFetch<AdminPrize[]>("/prizes"));
+      if (t === "prizes") {
+        const [loadedPrizes, loadedUsers] = await Promise.all([
+          adminFetch<AdminPrize[]>("/prizes"),
+          users.length === 0 ? adminFetch<AdminUser[]>("/users") : Promise.resolve(users),
+        ]);
+        setPrizes(loadedPrizes);
+        if (users.length === 0) setUsers(loadedUsers);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Fehler");
     } finally {
@@ -1266,9 +1275,50 @@ export function AdminPage() {
                   Gewinn vergeben
                 </p>
                 <div className="space-y-2">
-                  <div>
-                    <label className={labelCls}>User-ID</label>
-                    <input className={inputCls} type="number" placeholder="ID aus Nutzerliste" value={newPrize.user_id} onChange={(e) => setNewPrize((p) => ({ ...p, user_id: e.target.value }))} />
+                  <div className="relative">
+                    <label className={labelCls}>Empfänger</label>
+                    <input
+                      className={inputCls}
+                      placeholder="Name eingeben …"
+                      value={prizeUserSearch}
+                      autoComplete="off"
+                      onChange={(e) => {
+                        setPrizeUserSearch(e.target.value);
+                        setNewPrize((p) => ({ ...p, user_id: "" }));
+                        setPrizeUserOpen(true);
+                      }}
+                      onFocus={() => setPrizeUserOpen(true)}
+                      onBlur={() => setTimeout(() => setPrizeUserOpen(false), 150)}
+                    />
+                    {newPrize.user_id && (
+                      <p className="text-[10px] text-green-700 mt-0.5">✓ ID {newPrize.user_id} ausgewählt</p>
+                    )}
+                    {prizeUserOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {[...users]
+                          .sort((a, b) => a.display_name.localeCompare(b.display_name, "de"))
+                          .filter((u) => u.display_name.toLowerCase().includes(prizeUserSearch.toLowerCase()) || u.email.toLowerCase().includes(prizeUserSearch.toLowerCase()))
+                          .map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2"
+                              onMouseDown={() => {
+                                setNewPrize((p) => ({ ...p, user_id: String(u.id) }));
+                                setPrizeUserSearch(u.display_name);
+                                setPrizeUserOpen(false);
+                              }}
+                            >
+                              <span className="font-medium truncate">{u.display_name}</span>
+                              <span className="text-xs text-gray-400 shrink-0">{u.points} Pkt.</span>
+                            </button>
+                          ))
+                        }
+                        {users.filter((u) => u.display_name.toLowerCase().includes(prizeUserSearch.toLowerCase()) || u.email.toLowerCase().includes(prizeUserSearch.toLowerCase())).length === 0 && (
+                          <p className="px-3 py-2 text-sm text-gray-400">Kein Treffer</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className={labelCls}>Gewinn-Titel</label>
