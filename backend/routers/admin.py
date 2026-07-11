@@ -1061,6 +1061,90 @@ async def delete_suggestion(
     await db.commit()
 
 
+@router.get("/event-analysis")
+async def event_analysis(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    from models import QuizAttempt
+
+    # ── Fastest check-ins per stop type ────────────────────────────────────
+    type_filters = {
+        "photo": Challenge.is_photo == True,   # noqa: E712
+        "mystery": Challenge.is_mystery == True,  # noqa: E712
+        "quiz": Challenge.quiz_question.isnot(None),
+    }
+    fastest: dict = {}
+    for type_name, condition in type_filters.items():
+        rows = (await db.execute(
+            select(Challenge.id, Challenge.title, Challenge.start_at,
+                   User.display_name, CheckIn.checked_in_at)
+            .join(CheckIn, CheckIn.challenge_id == Challenge.id)
+            .join(User, User.id == CheckIn.user_id)
+            .where(condition, CheckIn.success == True)  # noqa: E712
+            .order_by(CheckIn.checked_in_at)
+        )).all()
+
+        seen_challenges: set[int] = set()
+        entries = []
+        for r in rows:
+            delta_s = (r.checked_in_at - r.start_at).total_seconds()
+            if delta_s < 0:
+                continue
+            entries.append({
+                "challenge_id": r.id,
+                "challenge_title": r.title,
+                "display_name": r.display_name,
+                "checked_in_at": _dt(r.checked_in_at),
+                "seconds_after_start": int(delta_s),
+                "first_at_stop": r.id not in seen_challenges,
+            })
+            seen_challenges.add(r.id)
+        fastest[type_name] = entries[:20]
+
+    # ── Who got all quiz questions right (wrong_count = 0) ─────────────────
+    quiz_challenge_ids = [
+        r[0] for r in (await db.execute(
+            select(Challenge.id).where(Challenge.quiz_question.isnot(None), Challenge.is_active == True)  # noqa: E712
+        )).all()
+    ]
+    total_quiz = len(quiz_challenge_ids)
+
+    if total_quiz > 0:
+        # Successful quiz check-ins per user
+        success_rows = (await db.execute(
+            select(CheckIn.user_id, func.count(CheckIn.id).label("cnt"))
+            .where(CheckIn.challenge_id.in_(quiz_challenge_ids), CheckIn.success == True)  # noqa: E712
+            .group_by(CheckIn.user_id)
+        )).all()
+        # Wrong attempts per user across quiz challenges
+        wrong_rows = (await db.execute(
+            select(QuizAttempt.user_id, func.sum(QuizAttempt.wrong_count).label("total_wrong"))
+            .where(QuizAttempt.challenge_id.in_(quiz_challenge_ids))
+            .group_by(QuizAttempt.user_id)
+        )).all()
+        wrong_by_user = {r.user_id: int(r.total_wrong or 0) for r in wrong_rows}
+
+        perfect_user_ids = [
+            r.user_id for r in success_rows
+            if r.cnt == total_quiz and wrong_by_user.get(r.user_id, 0) == 0
+        ]
+        perfect_users = []
+        if perfect_user_ids:
+            user_rows = (await db.execute(
+                select(User.id, User.display_name).where(User.id.in_(perfect_user_ids))
+            )).all()
+            perfect_users = [{"id": r.id, "display_name": r.display_name} for r in user_rows]
+    else:
+        perfect_users = []
+
+    return {
+        "fastest": fastest,
+        "total_quiz_challenges": total_quiz,
+        "perfect_quiz_users": perfect_users,
+    }
+
+
 @router.get("/survey/results")
 async def survey_results(
     db: AsyncSession = Depends(get_db),

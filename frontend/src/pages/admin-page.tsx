@@ -295,6 +295,11 @@ export function AdminPage() {
   const [flaggedCheckIns, setFlaggedCheckIns] = useState<FlaggedCheckIn[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [surveyResults, setSurveyResults] = useState<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>([]);
+  const [eventAnalysis, setEventAnalysis] = useState<{
+    fastest: Record<string, Array<{ challenge_id: number; challenge_title: string; display_name: string; checked_in_at: string; seconds_after_start: number; first_at_stop: boolean }>>;
+    total_quiz_challenges: number;
+    perfect_quiz_users: Array<{ id: number; display_name: string }>;
+  } | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<PhotoSubmissionEntry[]>([]);
   const [photoRejectMessages, setPhotoRejectMessages] = useState<Record<number, string>>({});
   const [photoRejectOpen, setPhotoRejectOpen] = useState<Record<number, boolean>>({});
@@ -332,14 +337,16 @@ export function AdminPage() {
     setError(null);
     try {
       if (t === "stats") {
-        const [loadedStats, loadedHealth, loadedSurvey] = await Promise.all([
+        const [loadedStats, loadedHealth, loadedSurvey, loadedAnalysis] = await Promise.all([
           adminFetch<Stats>("/stats"),
           adminFetch<HealthStatus>("/health-status"),
           adminFetch<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>("/survey/results").catch(() => []),
+          adminFetch<typeof eventAnalysis>("/event-analysis").catch(() => null),
         ]);
         setStats(loadedStats);
         setHealth(loadedHealth);
         setSurveyResults(loadedSurvey);
+        setEventAnalysis(loadedAnalysis);
       }
       if (t === "users") {
         const [loaded, loadedChallenges] = await Promise.all([
@@ -782,6 +789,65 @@ export function AdminPage() {
                   )}
                 </div>
               )}
+
+              {eventAnalysis && (() => {
+                const typeLabels: Record<string, string> = { photo: "Foto-Stops", mystery: "Mystery-Stops", quiz: "Rätsel-Stops" };
+                function fmt(seconds: number) {
+                  if (seconds < 60) return `${seconds}s`;
+                  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+                  const h = Math.floor(seconds / 3600);
+                  const m = Math.floor((seconds % 3600) / 60);
+                  return `${h}h ${m}m`;
+                }
+                return (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+                    <p className="text-sm font-bold">Schnellste Check-ins</p>
+                    {Object.entries(eventAnalysis.fastest).map(([type, entries]) => {
+                      if (!entries.length) return null;
+                      // group by challenge, show first entry (fastest) per challenge
+                      const byChallengeMap = new Map<number, typeof entries[0]>();
+                      entries.forEach((e) => { if (!byChallengeMap.has(e.challenge_id)) byChallengeMap.set(e.challenge_id, e); });
+                      const byChallenge = Array.from(byChallengeMap.values());
+                      return (
+                        <div key={type}>
+                          <p className="text-xs font-semibold text-gray-500 mb-2">{typeLabels[type]}</p>
+                          <div className="space-y-1">
+                            {byChallenge.slice(0, 5).map((e) => (
+                              <div key={e.challenge_id} className="flex items-center justify-between gap-2 text-xs bg-gray-50 rounded-lg px-2 py-1.5">
+                                <div className="min-w-0">
+                                  <span className="font-semibold truncate block">{e.display_name}</span>
+                                  <span className="text-gray-400 truncate block">{e.challenge_title}</span>
+                                </div>
+                                <span className="shrink-0 font-mono font-bold" style={{ color: "var(--oz-brand-green)" }}>{fmt(e.seconds_after_start)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {eventAnalysis.total_quiz_challenges > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">
+                          Alle {eventAnalysis.total_quiz_challenges} Rätsel fehlerfrei gelöst
+                        </p>
+                        {eventAnalysis.perfect_quiz_users.length === 0 ? (
+                          <p className="text-xs text-gray-400">Niemand hat alle Rätsel ohne Fehler gelöst.</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {eventAnalysis.perfect_quiz_users.map((u) => (
+                              <div key={u.id} className="flex items-center gap-2 text-xs bg-green-50 rounded-lg px-2 py-1.5">
+                                <span className="text-green-700">✓</span>
+                                <span className="font-semibold text-green-800">{u.display_name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <button
                 type="button"
