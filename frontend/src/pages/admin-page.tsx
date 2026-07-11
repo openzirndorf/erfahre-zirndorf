@@ -331,6 +331,8 @@ export function AdminPage() {
   const [newPrize, setNewPrize] = useState({ user_id: "", title: "", description: "", sponsor: "", notes: "" });
   const [prizeUserSearch, setPrizeUserSearch] = useState("");
   const [prizeUserOpen, setPrizeUserOpen] = useState(false);
+  const [tlRange, setTlRange] = useState<"7" | "14" | "all">("all");
+  const [tlMetrics, setTlMetrics] = useState({ cumCheckins: true, cumUsers: true, dailyCheckins: true });
 
   // New place form
   const [newPlace, setNewPlace] = useState({
@@ -681,75 +683,148 @@ export function AdminPage() {
 
               {/* Verlauf */}
               {timeline.length > 1 && (() => {
-                const W = 420, H = 120, PAD = { t: 8, r: 8, b: 24, l: 32 };
+                const slice = tlRange === "7" ? timeline.slice(-7) : tlRange === "14" ? timeline.slice(-14) : timeline;
+                const n = slice.length;
+                if (n < 2) return null;
+
+                const W = 420, H = 180;
+                const PAD = { t: 16, r: 12, b: 40, l: 44 };
                 const iw = W - PAD.l - PAD.r;
                 const ih = H - PAD.t - PAD.b;
-                const n = timeline.length;
 
-                function polyline(values: number[], color: string, maxVal: number) {
-                  if (maxVal === 0) return null;
-                  const pts = values.map((v, i) =>
-                    `${PAD.l + (i / (n - 1)) * iw},${PAD.t + ih - (v / maxVal) * ih}`
-                  ).join(" ");
-                  return <polyline key={color} points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />;
+                const maxCum   = Math.max(...slice.map((d) => Math.max(tlMetrics.cumCheckins ? d.cum_checkins : 0, tlMetrics.cumUsers ? d.cum_users : 0)), 1);
+                const maxDaily = Math.max(...slice.map((d) => tlMetrics.dailyCheckins ? d.new_checkins : 0), 1);
+
+                function cx(i: number) { return PAD.l + (i / (n - 1)) * iw; }
+                function cyLeft(v: number) { return PAD.t + ih - (v / maxCum) * ih; }
+                function cyRight(v: number) { return PAD.t + ih - (v / maxDaily) * ih; }
+
+                function linePath(vals: number[], yFn: (v: number) => number) {
+                  return vals.map((v, i) => `${i === 0 ? "M" : "L"}${cx(i).toFixed(1)},${yFn(v).toFixed(1)}`).join(" ");
+                }
+                function areaPath(vals: number[], yFn: (v: number) => number) {
+                  const base = PAD.t + ih;
+                  return `${linePath(vals, yFn)} L${cx(n-1).toFixed(1)},${base} L${cx(0).toFixed(1)},${base} Z`;
                 }
 
-                const maxCumUsers    = Math.max(...timeline.map((d) => d.cum_users));
-                const maxCumCheckins = Math.max(...timeline.map((d) => d.cum_checkins));
-                const maxNew         = Math.max(...timeline.map((d) => Math.max(d.new_checkins, d.new_users)));
+                // X-axis: label every ~5 days (max ~8 labels)
+                const step = Math.max(1, Math.ceil(n / 7));
+                const labelIdxs: number[] = [];
+                for (let i = 0; i < n; i += step) labelIdxs.push(i);
+                if (labelIdxs[labelIdxs.length - 1] !== n - 1) labelIdxs.push(n - 1);
 
-                // x-axis labels: first, mid, last
-                const labelIdxs = [0, Math.floor(n / 2), n - 1];
+                // Y-axis: 5 grid lines
+                const yTicks = [0, 0.25, 0.5, 0.75, 1];
+
+                const METRICS = [
+                  { key: "cumCheckins" as const, label: "Gesamt-Checkins", color: "#16a34a", vals: slice.map((d) => d.cum_checkins), yFn: cyLeft },
+                  { key: "cumUsers"    as const, label: "Gesamt-User",     color: "#6366f1", vals: slice.map((d) => d.cum_users),    yFn: cyLeft },
+                  { key: "dailyCheckins" as const, label: "Tägl. Checkins", color: "#f59e0b", vals: slice.map((d) => d.new_checkins), yFn: cyRight },
+                ];
+
+                const peakDay = [...slice].sort((a, b) => b.new_checkins - a.new_checkins)[0];
 
                 return (
                   <div className="bg-white rounded-2xl p-4 shadow-sm">
-                    <p className="text-sm font-bold mb-1">Verlauf über die Aktionslaufzeit</p>
-                    <div className="flex gap-3 text-[10px] text-gray-500 mb-2 flex-wrap">
-                      <span><span style={{ color: "var(--oz-brand-green)" }}>──</span> Gesamt-Checkins</span>
-                      <span><span style={{ color: "#6366f1" }}>──</span> Gesamt-User</span>
-                      <span><span style={{ color: "#f59e0b" }}>──</span> Tägl. Checkins</span>
+                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                      <p className="text-sm font-bold">Verlauf</p>
+                      <div className="flex rounded-lg bg-gray-100 p-0.5 gap-0.5 text-xs">
+                        {(["7", "14", "all"] as const).map((r) => (
+                          <button key={r} type="button"
+                            onClick={() => setTlRange(r)}
+                            className={`px-2.5 py-1 rounded-md font-semibold transition-all ${tlRange === r ? "bg-white shadow text-gray-900" : "text-gray-500"}`}>
+                            {r === "all" ? "Gesamt" : `${r} Tage`}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ overflow: "visible" }}>
-                      {/* Grid lines */}
-                      {[0, 0.5, 1].map((f) => (
-                        <line key={f} x1={PAD.l} x2={W - PAD.r}
-                          y1={PAD.t + ih * (1 - f)} y2={PAD.t + ih * (1 - f)}
-                          stroke="#e5e7eb" strokeWidth="1" />
+
+                    {/* Metric toggles */}
+                    <div className="flex gap-2 mb-3 flex-wrap">
+                      {METRICS.map((m) => (
+                        <button key={m.key} type="button"
+                          onClick={() => setTlMetrics((prev) => ({ ...prev, [m.key]: !prev[m.key] }))}
+                          className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold border transition-all"
+                          style={{
+                            borderColor: tlMetrics[m.key] ? m.color : "#e5e7eb",
+                            background: tlMetrics[m.key] ? m.color + "18" : "transparent",
+                            color: tlMetrics[m.key] ? m.color : "#9ca3af",
+                          }}>
+                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: tlMetrics[m.key] ? m.color : "#d1d5db" }} />
+                          {m.label}
+                        </button>
                       ))}
-                      {/* Cumulative check-ins (green) */}
-                      {polyline(timeline.map((d) => d.cum_checkins), "var(--oz-brand-green)", maxCumCheckins)}
-                      {/* Cumulative users (indigo) */}
-                      {polyline(timeline.map((d) => d.cum_users), "#6366f1", maxCumUsers)}
-                      {/* Daily check-ins (amber) */}
-                      {polyline(timeline.map((d) => d.new_checkins), "#f59e0b", maxNew)}
-                      {/* Y-axis labels */}
-                      {[0, 1].map((f) => (
-                        <text key={f} x={PAD.l - 4} y={PAD.t + ih * (1 - f) + 4}
-                          textAnchor="end" fontSize="9" fill="#9ca3af">
-                          {f === 0 ? "0" : maxCumCheckins}
-                        </text>
-                      ))}
-                      {/* X-axis labels */}
-                      {labelIdxs.map((i) => (
-                        <text key={i}
-                          x={PAD.l + (i / (n - 1)) * iw}
-                          y={H - 4}
-                          textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
-                          fontSize="9" fill="#9ca3af">
-                          {timeline[i].date.slice(5)}
-                        </text>
-                      ))}
-                    </svg>
-                    {/* Summary numbers */}
-                    <div className="grid grid-cols-3 gap-2 mt-2">
+                    </div>
+
+                    <div style={{ overflowX: "auto" }}>
+                      <svg viewBox={`0 0 ${W} ${H}`} style={{ minWidth: "320px", width: "100%", overflow: "visible" }}>
+                        <defs>
+                          {METRICS.map((m) => (
+                            <linearGradient key={m.key} id={`grad-${m.key}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={m.color} stopOpacity="0.18" />
+                              <stop offset="100%" stopColor={m.color} stopOpacity="0.01" />
+                            </linearGradient>
+                          ))}
+                        </defs>
+
+                        {/* Grid lines + Y labels */}
+                        {yTicks.map((f) => {
+                          const y = PAD.t + ih * (1 - f);
+                          const val = Math.round(f * maxCum);
+                          return (
+                            <g key={f}>
+                              <line x1={PAD.l} x2={W - PAD.r} y1={y} y2={y}
+                                stroke={f === 0 ? "#d1d5db" : "#f3f4f6"} strokeWidth={f === 0 ? 1.5 : 1} />
+                              {f > 0 && (
+                                <text x={PAD.l - 6} y={y + 3.5} textAnchor="end" fontSize="9" fill="#9ca3af">{val}</text>
+                              )}
+                            </g>
+                          );
+                        })}
+
+                        {/* Right y-axis label (daily) */}
+                        <text x={W - PAD.r + 6} y={PAD.t + 3.5} textAnchor="start" fontSize="9" fill="#f59e0b">{maxDaily}</text>
+                        <text x={W - PAD.r + 6} y={PAD.t + ih + 3.5} textAnchor="start" fontSize="9" fill="#f59e0b">0</text>
+
+                        {/* Areas + Lines */}
+                        {METRICS.map((m) => tlMetrics[m.key] && (
+                          <g key={m.key}>
+                            <path d={areaPath(m.vals, m.yFn)} fill={`url(#grad-${m.key})`} />
+                            <path d={linePath(m.vals, m.yFn)} fill="none" stroke={m.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                          </g>
+                        ))}
+
+                        {/* X-axis labels */}
+                        {labelIdxs.map((i) => {
+                          const d = slice[i];
+                          const [, mo, day] = d.date.split("-");
+                          const anchor = i === 0 ? "start" : i === n - 1 ? "end" : "middle";
+                          return (
+                            <g key={i}>
+                              <line x1={cx(i)} x2={cx(i)} y1={PAD.t + ih} y2={PAD.t + ih + 4} stroke="#d1d5db" strokeWidth="1" />
+                              <text x={cx(i)} y={PAD.t + ih + 14} textAnchor={anchor} fontSize="9" fill="#6b7280">{`${day}.${mo}.`}</text>
+                            </g>
+                          );
+                        })}
+
+                        {/* X-axis line */}
+                        <line x1={PAD.l} x2={W - PAD.r} y1={PAD.t + ih} y2={PAD.t + ih} stroke="#d1d5db" strokeWidth="1.5" />
+                        <line x1={PAD.l} x2={PAD.l} y1={PAD.t} y2={PAD.t + ih} stroke="#d1d5db" strokeWidth="1.5" />
+                      </svg>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="grid grid-cols-4 gap-2 mt-3">
                       {[
-                        { label: "Gesamt-User", value: maxCumUsers, color: "#6366f1" },
-                        { label: "Gesamt-Checkins", value: maxCumCheckins, color: "var(--oz-brand-green)" },
-                        { label: "Peak-Tag (Checkins)", value: maxNew, color: "#f59e0b" },
+                        { label: "User gesamt",   value: slice[n-1].cum_users,    color: "#6366f1" },
+                        { label: "Check-ins ges.", value: slice[n-1].cum_checkins, color: "#16a34a" },
+                        { label: "Peak-Tag",       value: peakDay.new_checkins,    color: "#f59e0b", sub: peakDay.date.slice(5) },
+                        { label: "Tage",           value: n,                       color: "#6b7280" },
                       ].map((s) => (
                         <div key={s.label} className="rounded-xl bg-gray-50 p-2 text-center">
-                          <p className="text-lg font-black" style={{ color: s.color }}>{s.value}</p>
-                          <p className="text-[10px] text-gray-500 leading-tight">{s.label}</p>
+                          <p className="text-base font-black leading-tight" style={{ color: s.color }}>{s.value}</p>
+                          {"sub" in s && <p className="text-[9px] text-gray-400">{s.sub}</p>}
+                          <p className="text-[10px] text-gray-500 leading-tight mt-0.5">{s.label}</p>
                         </div>
                       ))}
                     </div>
