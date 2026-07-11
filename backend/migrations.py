@@ -117,6 +117,36 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
     if "rating_comment" not in survey_columns:
         await conn.execute(text("ALTER TABLE survey_responses ADD COLUMN rating_comment TEXT"))
 
+    # Gewinne
+    if is_postgres:
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS prizes (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR NOT NULL,
+                description TEXT,
+                sponsor VARCHAR,
+                awarded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                user_claimed_at TIMESTAMP WITH TIME ZONE,
+                admin_confirmed_at TIMESTAMP WITH TIME ZONE,
+                notes TEXT
+            )
+        """))
+    else:
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS prizes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR NOT NULL,
+                description TEXT,
+                sponsor VARCHAR,
+                awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                user_claimed_at TIMESTAMP,
+                admin_confirmed_at TIMESTAMP,
+                notes TEXT
+            )
+        """))
+
     # Quiz-Fehlversuche
     await conn.execute(text("""
         CREATE TABLE IF NOT EXISTS quiz_attempts (

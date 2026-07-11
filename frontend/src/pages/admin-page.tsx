@@ -1,7 +1,8 @@
-import { Ban, Camera, CheckCircle2, ClipboardList, Flag, HeartPulse, Info, Pencil, Plus, RotateCcw, Save, Shield, Trash2, Unlock, X } from "lucide-react";
+import { Ban, Camera, CheckCircle2, ClipboardList, Flag, Gift, HeartPulse, Info, Pencil, Plus, RotateCcw, Save, Shield, Trash2, Unlock, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { adminFetchPendingPhotos, adminReviewPhoto, adminFetch } from "../api/client";
 import { useToast } from "../components/toast-provider";
+import type { AdminPrize } from "../types";
 
 const parseUTC = (s: string) => new Date(/Z|[+-]\d{2}:\d{2}$/.test(s) ? s : s + "Z");
 const toBerlinInput = (utcIso: string) =>
@@ -143,7 +144,7 @@ interface PhotoSubmissionEntry {
   image_base64: string;
 }
 
-type Tab = "stats" | "users" | "flags" | "audit" | "places" | "challenges" | "suggestions" | "upcoming" | "photos";
+type Tab = "stats" | "users" | "flags" | "audit" | "places" | "challenges" | "suggestions" | "upcoming" | "photos" | "prizes";
 
 const BLOCK_REASON_OPTIONS = [
   { label: "Verdächtiger Standort", value: "Verdächtiger Standort: Bitte melde dich bei OpenZirndorf, wenn du glaubst, dass das ein Fehler ist." },
@@ -322,6 +323,8 @@ export function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const [filterNewsletter, setFilterNewsletter] = useState(false);
+  const [prizes, setPrizes] = useState<AdminPrize[]>([]);
+  const [newPrize, setNewPrize] = useState({ user_id: "", title: "", description: "", sponsor: "", notes: "" });
 
   // New place form
   const [newPlace, setNewPlace] = useState({
@@ -372,6 +375,7 @@ export function AdminPage() {
       if (t === "suggestions") setSuggestions(await adminFetch<typeof suggestions>("/suggestions").catch(() => []));
       if (t === "upcoming") setUpcoming(await adminFetch<AdminChallenge[]>("/challenges/upcoming"));
       if (t === "photos") setPendingPhotos(await adminFetchPendingPhotos<PhotoSubmissionEntry[]>());
+      if (t === "prizes") setPrizes(await adminFetch<AdminPrize[]>("/prizes"));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Fehler");
     } finally {
@@ -609,7 +613,7 @@ export function AdminPage() {
 
       {/* Tabs */}
       <div className="grid grid-cols-3 rounded-xl bg-gray-100 p-1 mb-6 gap-1">
-        {(["stats", "users", "flags", "audit", "places", "challenges", "suggestions", "upcoming", "photos"] as Tab[]).map((t) => (
+        {(["stats", "users", "flags", "audit", "places", "challenges", "suggestions", "upcoming", "photos", "prizes"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
@@ -618,7 +622,7 @@ export function AdminPage() {
               tab === t ? "bg-white shadow text-gray-900" : "text-gray-500"
             }`}
           >
-            {t === "stats" ? "Übersicht" : t === "users" ? "Nutzer" : t === "flags" ? "Prüfung" : t === "audit" ? "Audit" : t === "places" ? "Orte" : t === "challenges" ? "Challenges" : t === "photos" ? "Fotos" : t === "suggestions" ? (
+            {t === "stats" ? "Übersicht" : t === "users" ? "Nutzer" : t === "flags" ? "Prüfung" : t === "audit" ? "Audit" : t === "places" ? "Orte" : t === "challenges" ? "Challenges" : t === "photos" ? "Fotos" : t === "prizes" ? "Gewinne" : t === "suggestions" ? (
               <span className="relative">
                 Kontakt
                 {stats && stats.unanswered_support > 0 && (
@@ -830,7 +834,7 @@ export function AdminPage() {
                     {eventAnalysis.total_quiz_challenges > 0 && eventAnalysis.top_quiz_users.length > 0 && (
                       <div>
                         <p className="text-xs font-semibold text-gray-500 mb-2">
-                          Top 5 Rätsel · von {eventAnalysis.total_quiz_challenges} gesamt
+                          Top 10 Rätsel · von {eventAnalysis.total_quiz_challenges} gesamt
                         </p>
                         <div className="space-y-1">
                           {eventAnalysis.top_quiz_users.map((u, i) => (
@@ -1166,6 +1170,144 @@ export function AdminPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {tab === "prizes" && (
+            <div className="space-y-4">
+              {/* Neuen Gewinn anlegen */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Gift className="w-4 h-4" style={{ color: "var(--oz-brand-green)" }} />
+                  Gewinn vergeben
+                </p>
+                <div className="space-y-2">
+                  <div>
+                    <label className={labelCls}>User-ID</label>
+                    <input className={inputCls} type="number" placeholder="ID aus Nutzerliste" value={newPrize.user_id} onChange={(e) => setNewPrize((p) => ({ ...p, user_id: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Gewinn-Titel</label>
+                    <input className={inputCls} placeholder="z.B. Gutschein 20 €" value={newPrize.title} onChange={(e) => setNewPrize((p) => ({ ...p, title: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Beschreibung (optional)</label>
+                    <input className={inputCls} placeholder="Details zum Gewinn" value={newPrize.description} onChange={(e) => setNewPrize((p) => ({ ...p, description: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Sponsor (optional)</label>
+                    <input className={inputCls} placeholder="z.B. Café Eders" value={newPrize.sponsor} onChange={(e) => setNewPrize((p) => ({ ...p, sponsor: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Interne Notiz (optional)</label>
+                    <input className={inputCls} placeholder="nur für Admins sichtbar" value={newPrize.notes} onChange={(e) => setNewPrize((p) => ({ ...p, notes: e.target.value }))} />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!newPrize.user_id || !newPrize.title}
+                    onClick={async () => {
+                      try {
+                        const created = await adminFetch<AdminPrize>("/prizes", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            user_id: Number(newPrize.user_id),
+                            title: newPrize.title,
+                            description: newPrize.description || null,
+                            sponsor: newPrize.sponsor || null,
+                            notes: newPrize.notes || null,
+                          }),
+                        });
+                        setPrizes((prev) => [created, ...prev]);
+                        setNewPrize({ user_id: "", title: "", description: "", sponsor: "", notes: "" });
+                        showToast("Gewinn angelegt.", "success");
+                      } catch (e) {
+                        showToast(e instanceof Error ? e.message : "Fehler", "error");
+                      }
+                    }}
+                    className="w-full rounded-xl py-2.5 text-sm font-bold text-white disabled:opacity-40"
+                    style={{ background: "var(--oz-brand-green)" }}
+                  >
+                    Gewinn anlegen
+                  </button>
+                </div>
+              </div>
+
+              {/* Gewinne-Liste */}
+              {prizes.length === 0 ? (
+                <div className="rounded-2xl bg-white p-5 text-center text-sm text-gray-500 shadow-sm">Noch keine Gewinne angelegt.</div>
+              ) : prizes.map((prize) => {
+                const confirmed = !!prize.admin_confirmed_at;
+                const claimed = !!prize.user_claimed_at;
+                return (
+                  <div key={prize.id} className={`bg-white rounded-2xl p-4 shadow-sm border ${confirmed ? "border-green-200" : claimed ? "border-amber-200" : "border-transparent"}`}>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm">{prize.title}</p>
+                        <p className="text-xs text-gray-500">{prize.display_name} · ID {prize.user_id}</p>
+                        {prize.sponsor && <p className="text-xs text-gray-400">Sponsor: {prize.sponsor}</p>}
+                        {prize.description && <p className="text-xs text-gray-600 mt-0.5">{prize.description}</p>}
+                        {prize.notes && <p className="text-xs text-amber-700 mt-0.5 italic">Notiz: {prize.notes}</p>}
+                      </div>
+                      <div className="shrink-0 flex flex-col items-end gap-1">
+                        {confirmed ? (
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700">Bestätigt ✓</span>
+                        ) : claimed ? (
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700">User hat abgeholt</span>
+                        ) : (
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-500">Ausstehend</span>
+                        )}
+                      </div>
+                    </div>
+                    {claimed && <p className="text-xs text-gray-400 mb-2">User-Bestätigung: {new Date(prize.user_claimed_at!).toLocaleString("de-DE", { timeZone: "Europe/Berlin" })}</p>}
+                    <div className="flex gap-2 mt-2">
+                      {!confirmed && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const updated = await adminFetch<AdminPrize>(`/prizes/${prize.id}`, {
+                              method: "PATCH",
+                              body: JSON.stringify({ admin_confirmed_at: "now" }),
+                            });
+                            setPrizes((prev) => prev.map((p) => p.id === prize.id ? updated : p));
+                            showToast("Abholung bestätigt.", "success");
+                          }}
+                          className="flex-1 rounded-xl py-2 text-xs font-bold text-white"
+                          style={{ background: "var(--oz-brand-green)" }}
+                        >
+                          Abholung bestätigen
+                        </button>
+                      )}
+                      {confirmed && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const updated = await adminFetch<AdminPrize>(`/prizes/${prize.id}`, {
+                              method: "PATCH",
+                              body: JSON.stringify({ admin_confirmed_at: null }),
+                            });
+                            setPrizes((prev) => prev.map((p) => p.id === prize.id ? updated : p));
+                          }}
+                          className="flex-1 rounded-xl py-2 text-xs font-bold bg-gray-100 text-gray-600"
+                        >
+                          Bestätigung zurücksetzen
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Gewinn "${prize.title}" für ${prize.display_name} löschen?`)) return;
+                          await adminFetch(`/prizes/${prize.id}`, { method: "DELETE" });
+                          setPrizes((prev) => prev.filter((p) => p.id !== prize.id));
+                          showToast("Gelöscht.", "success");
+                        }}
+                        className="rounded-xl py-2 px-3 text-xs font-bold bg-red-50 text-red-700"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 

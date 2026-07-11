@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from auth import get_current_user
 from database import get_db
-from models import Badge, CheckIn, Suggestion, SurveyResponse, User, UserBadge
+from models import Badge, CheckIn, Prize, Suggestion, SurveyResponse, User, UserBadge
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -127,6 +127,46 @@ async def submit_rating(
         existing.rating_comment = body.comment
     else:
         db.add(SurveyResponse(user_id=current_user.id, rating=body.rating, rating_comment=body.comment))
+
+
+@router.get("/me/prizes")
+async def my_prizes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rows = (await db.execute(
+        select(Prize).where(Prize.user_id == current_user.id).order_by(Prize.awarded_at.desc())
+    )).scalars().all()
+    return [
+        {
+            "id": r.id,
+            "title": r.title,
+            "description": r.description,
+            "sponsor": r.sponsor,
+            "awarded_at": r.awarded_at.isoformat() if r.awarded_at else None,
+            "user_claimed_at": r.user_claimed_at.isoformat() if r.user_claimed_at else None,
+            "admin_confirmed_at": r.admin_confirmed_at.isoformat() if r.admin_confirmed_at else None,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/me/prizes/{prize_id}/claim", status_code=status.HTTP_204_NO_CONTENT)
+async def claim_prize(
+    prize_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from fastapi import HTTPException
+    from datetime import UTC, datetime
+    prize = (await db.execute(
+        select(Prize).where(Prize.id == prize_id, Prize.user_id == current_user.id)
+    )).scalar_one_or_none()
+    if not prize:
+        raise HTTPException(status_code=404, detail="Gewinn nicht gefunden")
+    if prize.user_claimed_at:
+        raise HTTPException(status_code=409, detail="Bereits abgeholt")
+    prize.user_claimed_at = datetime.now(UTC)
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

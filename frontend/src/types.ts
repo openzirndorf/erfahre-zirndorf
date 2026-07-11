@@ -100,6 +100,22 @@ export interface UserProgress {
   my_rating?: number | null;
 }
 
+export interface UserPrize {
+  id: number;
+  title: string;
+  description: string | null;
+  sponsor: string | null;
+  awarded_at: string;
+  user_claimed_at: string | null;
+  admin_confirmed_at: string | null;
+}
+
+export interface AdminPrize extends UserPrize {
+  user_id: number;
+  display_name: string | null;
+  notes: string | null;
+}
+
 export interface AuthState {
   token: string;
   user_id: number;

@@ -205,6 +205,22 @@ class Suggestion(Base):
     user: Mapped["User"] = relationship("User")
 
 
+class Prize(Base):
+    __tablename__ = "prizes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sponsor: Mapped[str | None] = mapped_column(String, nullable=True)
+    awarded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)
+    user_claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    user: Mapped["User"] = relationship("User")
+
+
 class SurveyResponse(Base):
     __tablename__ = "survey_responses"
 

@@ -11,7 +11,7 @@ from sqlalchemy.orm import aliased, selectinload
 from auth import get_admin_user
 from config import settings
 from database import get_db
-from models import AdminAuditLog, Badge, BadgeRuleType, Challenge, CheckIn, Place, PhotoSubmission, Suggestion, SurveyResponse, User, UserBadge, UserRole
+from models import AdminAuditLog, Badge, BadgeRuleType, Challenge, CheckIn, Place, PhotoSubmission, Prize, Suggestion, SurveyResponse, User, UserBadge, UserRole
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -1137,8 +1137,8 @@ async def event_analysis(
         )).all()
         wrong_by_user = {r.user_id: int(r.total_wrong or 0) for r in wrong_rows}
 
-        # Top 5 by correct answers
-        top5_user_ids = [r.user_id for r in success_rows[:5]]
+        # Top 10 by correct answers
+        top5_user_ids = [r.user_id for r in success_rows[:10]]
         top5_users = []
         if top5_user_ids:
             user_map = {
@@ -1147,7 +1147,7 @@ async def event_analysis(
                     select(User.id, User.display_name).where(User.id.in_(top5_user_ids))
                 )).all()
             }
-            for r in success_rows[:5]:
+            for r in success_rows[:10]:
                 top5_users.append({
                     "id": r.user_id,
                     "display_name": user_map.get(r.user_id, "?"),
@@ -1197,3 +1197,108 @@ async def survey_results(
         }
         for r in rows
     ]
+
+
+# ── Prizes ─────────────────────────────────────────────────────────────────
+
+def _prize_dict(p: Prize, display_name: str | None = None) -> dict:
+    return {
+        "id": p.id,
+        "user_id": p.user_id,
+        "display_name": display_name,
+        "title": p.title,
+        "description": p.description,
+        "sponsor": p.sponsor,
+        "awarded_at": _dt(p.awarded_at),
+        "user_claimed_at": _dt(p.user_claimed_at) if p.user_claimed_at else None,
+        "admin_confirmed_at": _dt(p.admin_confirmed_at) if p.admin_confirmed_at else None,
+        "notes": p.notes,
+    }
+
+
+@router.get("/prizes")
+async def list_prizes(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    rows = (await db.execute(
+        select(Prize, User.display_name)
+        .join(User, User.id == Prize.user_id)
+        .order_by(Prize.awarded_at.desc())
+    )).all()
+    return [_prize_dict(p, name) for p, name in rows]
+
+
+class PrizeCreate(BaseModel):
+    user_id: int
+    title: str
+    description: str | None = None
+    sponsor: str | None = None
+    notes: str | None = None
+
+
+@router.post("/prizes", status_code=201)
+async def create_prize(
+    body: PrizeCreate,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    user = await db.get(User, body.user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+    prize = Prize(
+        user_id=body.user_id,
+        title=body.title,
+        description=body.description,
+        sponsor=body.sponsor,
+        notes=body.notes,
+    )
+    db.add(prize)
+    await db.flush()
+    return _prize_dict(prize, user.display_name)
+
+
+class PrizePatch(BaseModel):
+    admin_confirmed_at: str | None = None  # "now" to confirm, null to unconfirm
+    notes: str | None = None
+    title: str | None = None
+    description: str | None = None
+    sponsor: str | None = None
+
+
+@router.patch("/prizes/{prize_id}")
+async def update_prize(
+    prize_id: int,
+    body: PrizePatch,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    prize = await db.get(Prize, prize_id)
+    if not prize:
+        raise HTTPException(status_code=404, detail="Gewinn nicht gefunden")
+    if body.admin_confirmed_at == "now":
+        prize.admin_confirmed_at = datetime.now(UTC)
+    elif body.admin_confirmed_at is None and "admin_confirmed_at" in body.model_fields_set:
+        prize.admin_confirmed_at = None
+    if body.notes is not None:
+        prize.notes = body.notes
+    if body.title is not None:
+        prize.title = body.title
+    if body.description is not None:
+        prize.description = body.description
+    if body.sponsor is not None:
+        prize.sponsor = body.sponsor
+    user = await db.get(User, prize.user_id)
+    return _prize_dict(prize, user.display_name if user else None)
+
+
+@router.delete("/prizes/{prize_id}", status_code=204)
+async def delete_prize(
+    prize_id: int,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    prize = await db.get(Prize, prize_id)
+    if not prize:
+        raise HTTPException(status_code=404, detail="Nicht gefunden")
+    await db.delete(prize)

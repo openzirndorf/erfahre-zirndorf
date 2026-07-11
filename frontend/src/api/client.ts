@@ -151,6 +151,14 @@ export async function submitRating(rating: number, comment?: string): Promise<vo
   await request("/users/me/rating", { method: "POST", body: JSON.stringify({ rating, comment: comment ?? null }) });
 }
 
+export async function fetchMyPrizes(): Promise<import("../types").UserPrize[]> {
+  return request("/users/me/prizes");
+}
+
+export async function claimPrize(prizeId: number): Promise<void> {
+  await request(`/users/me/prizes/${prizeId}/claim`, { method: "POST" });
+}
+
 // Admin
 export async function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   return request(`/admin${path}`, options);
