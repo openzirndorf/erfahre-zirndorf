@@ -91,9 +91,9 @@ export function ProfilePage() {
     if (!auth) { setLoading(false); return; }
     fetchMyProgress()
       .then((p) => { setProgress(p); setNewsletterConsent(p.newsletter_consent ?? false); setMyRating(p.my_rating ?? null); })
-    fetchMyPrizes().then(setPrizes).catch(() => {});
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+    fetchMyPrizes().then(setPrizes).catch(() => {});
   }, []);
 
   if (!auth) {
