@@ -276,7 +276,7 @@ export function HomePage() {
                     {!claimed && !confirmed && !isConfirming && (
                       <div className="mt-2">
                         <p className="text-xs text-gray-500 mb-2">
-                          Bitte bis spätestens <strong>2. August</strong> zu den regulären Öffnungszeiten abholen – danach verfällt der Anspruch.
+                          Bitte bis spätestens <strong>2. August</strong> im <strong>Hotel Knorz, Zirndorf</strong> zu den regulären Öffnungszeiten abholen – danach verfällt der Anspruch.
                         </p>
                         <button
                           type="button"
