@@ -296,7 +296,7 @@ export function AdminPage() {
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [surveyResults, setSurveyResults] = useState<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>([]);
   const [eventAnalysis, setEventAnalysis] = useState<{
-    fastest: Record<string, Array<{ challenge_id: number; challenge_title: string; display_name: string; checked_in_at: string; seconds_after_start: number; first_at_stop: boolean }>>;
+    fastest: Record<string, Array<{ challenge_id: number; challenge_title: string; display_name: string; checked_in_at: string; seconds_after_start: number }>>;
     total_quiz_challenges: number;
     perfect_quiz_users: Array<{ id: number; display_name: string }>;
   } | null>(null);

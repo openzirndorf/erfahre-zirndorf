@@ -1076,6 +1076,8 @@ async def event_analysis(
     }
     fastest: dict = {}
     for type_name, condition in type_filters.items():
+        # All successful check-ins, ordered by absolute time so we can pick
+        # the earliest per challenge with a simple seen-set.
         rows = (await db.execute(
             select(Challenge.id, Challenge.title, Challenge.start_at,
                    User.display_name, CheckIn.checked_in_at)
@@ -1085,11 +1087,18 @@ async def event_analysis(
             .order_by(CheckIn.checked_in_at)
         )).all()
 
+        # Keep only the FIRST (earliest absolute) check-in per challenge, then
+        # sort the resulting list by relative delta so the fastest appears first.
         seen_challenges: set[int] = set()
         entries = []
         for r in rows:
-            delta_s = (r.checked_in_at - r.start_at).total_seconds()
+            if r.id in seen_challenges:
+                continue
+            start = r.start_at if r.start_at.tzinfo else r.start_at.replace(tzinfo=UTC)
+            ci    = r.checked_in_at if r.checked_in_at.tzinfo else r.checked_in_at.replace(tzinfo=UTC)
+            delta_s = (ci - start).total_seconds()
             if delta_s < 0:
+                seen_challenges.add(r.id)
                 continue
             entries.append({
                 "challenge_id": r.id,
@@ -1097,10 +1106,12 @@ async def event_analysis(
                 "display_name": r.display_name,
                 "checked_in_at": _dt(r.checked_in_at),
                 "seconds_after_start": int(delta_s),
-                "first_at_stop": r.id not in seen_challenges,
             })
             seen_challenges.add(r.id)
-        fastest[type_name] = entries[:20]
+
+        # Sort by relative time (fastest first), not by absolute timestamp
+        entries.sort(key=lambda e: e["seconds_after_start"])
+        fastest[type_name] = entries[:10]
 
     # ── Who got all quiz questions right (wrong_count = 0) ─────────────────
     quiz_challenge_ids = [
