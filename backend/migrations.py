@@ -112,6 +112,10 @@ async def run_schema_migrations(conn: AsyncConnection) -> None:
         await conn.execute(text("ALTER TABLE survey_responses ADD COLUMN q4 VARCHAR"))
     if "q5" not in survey_columns:
         await conn.execute(text("ALTER TABLE survey_responses ADD COLUMN q5 TEXT"))
+    if "rating" not in survey_columns:
+        await conn.execute(text("ALTER TABLE survey_responses ADD COLUMN rating INTEGER"))
+    if "rating_comment" not in survey_columns:
+        await conn.execute(text("ALTER TABLE survey_responses ADD COLUMN rating_comment TEXT"))
 
     # Quiz-Fehlversuche
     await conn.execute(text("""

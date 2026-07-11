@@ -215,4 +215,6 @@ class SurveyResponse(Base):
     q3: Mapped[str | None] = mapped_column(String, nullable=True)   # Teams interessant?
     q4: Mapped[str | None] = mapped_column(String, nullable=True)   # Quize/Aufgaben interessant?
     q5: Mapped[str | None] = mapped_column(Text, nullable=True)     # Freier Wunsch (optional)
+    rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rating_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), nullable=False)

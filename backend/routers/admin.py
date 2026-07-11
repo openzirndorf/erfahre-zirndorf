@@ -1077,6 +1077,8 @@ async def survey_results(
             "q3": r.q3,
             "q4": r.q4,
             "q5": r.q5,
+            "rating": r.rating,
+            "rating_comment": r.rating_comment,
             "created_at": _dt(r.created_at),
         }
         for r in rows

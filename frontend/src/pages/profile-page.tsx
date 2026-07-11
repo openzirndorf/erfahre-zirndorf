@@ -2,7 +2,7 @@ import { Award, Bike, Bell, Copy, ExternalLink, Gift, LogIn, MapPin, MessageCirc
 import { ShareButton } from "../components/share-button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch, updateNewsletterConsent } from "../api/client";
+import { apiFetch, updateNewsletterConsent, submitRating } from "../api/client";
 import { fetchMyProgress } from "../api/client";
 import { OzFooter } from "../components/oz-footer";
 import type { AuthState, UserProgress } from "../types";
@@ -60,6 +60,9 @@ export function ProfilePage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [newsletterConsent, setNewsletterConsent] = useState(false);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const auth = getAuth();
 
   async function handleDeleteAccount() {
@@ -84,7 +87,7 @@ export function ProfilePage() {
   useEffect(() => {
     if (!auth) { setLoading(false); return; }
     fetchMyProgress()
-      .then((p) => { setProgress(p); setNewsletterConsent(p.newsletter_consent ?? false); })
+      .then((p) => { setProgress(p); setNewsletterConsent(p.newsletter_consent ?? false); setMyRating(p.my_rating ?? null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -345,6 +348,52 @@ export function ProfilePage() {
             </div>
           </div>
         )}
+
+        {/* Sternebewertung */}
+        <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>
+          <h2 className="font-bold text-base mb-0.5" style={{ fontFamily: "var(--oz-font-heading)" }}>
+            Wie hat dir die Aktion gefallen?
+          </h2>
+          <p className="text-xs text-gray-500 mb-4">Dein Feedback hilft uns für zukünftige Aktionen.</p>
+          <div className="flex justify-center gap-3 mb-3">
+            {[1, 2, 3, 4, 5].map((star) => {
+              const filled = star <= (hoverRating ?? myRating ?? 0);
+              return (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={async () => {
+                    setMyRating(star);
+                    setRatingSubmitted(false);
+                    try {
+                      await submitRating(star);
+                      setRatingSubmitted(true);
+                    } catch { /* ignore */ }
+                  }}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(null)}
+                  className="transition-transform active:scale-110 hover:scale-110"
+                  aria-label={`${star} Stern${star !== 1 ? "e" : ""}`}
+                >
+                  <Star
+                    className="w-9 h-9 transition-colors"
+                    style={{ color: filled ? "#f59e0b" : "#d1d5db", fill: filled ? "#f59e0b" : "none" }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          {ratingSubmitted && (
+            <p className="text-center text-sm font-semibold" style={{ color: "var(--oz-brand-green)" }}>
+              Danke für dein Feedback!
+            </p>
+          )}
+          {myRating && !ratingSubmitted && (
+            <p className="text-center text-xs text-gray-400">
+              {"★".repeat(myRating)}{"☆".repeat(5 - myRating)} · jederzeit änderbar
+            </p>
+          )}
+        </div>
 
         {/* Einstellungen */}
         <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "var(--oz-shadow)" }}>

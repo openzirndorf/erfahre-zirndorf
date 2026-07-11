@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -31,6 +31,7 @@ class UserProgress(BaseModel):
     referrals_registered: int = 0
     referrals_milestone: int = 0
     newsletter_consent: bool = False
+    my_rating: int | None = None
 
 
 @router.get("/me/progress", response_model=UserProgress)
@@ -72,6 +73,11 @@ async def my_progress(
     )
     referrals_row = referrals_result.one()
 
+    survey_result = await db.execute(
+        select(SurveyResponse.rating).where(SurveyResponse.user_id == current_user.id)
+    )
+    my_rating = survey_result.scalar_one_or_none()
+
     return UserProgress(
         user_id=current_user.id,
         display_name=current_user.display_name,
@@ -82,6 +88,7 @@ async def my_progress(
         referrals_registered=referrals_row.total,
         referrals_milestone=referrals_row.milestone,
         newsletter_consent=current_user.newsletter_consent,
+        my_rating=my_rating,
     )
 
 
@@ -96,6 +103,30 @@ async def update_newsletter_consent(
     current_user: User = Depends(get_current_user),
 ):
     current_user.newsletter_consent = body.consent
+
+
+class RatingBody(BaseModel):
+    rating: int
+    comment: str | None = None
+
+
+@router.post("/me/rating", status_code=status.HTTP_204_NO_CONTENT)
+async def submit_rating(
+    body: RatingBody,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if body.rating < 1 or body.rating > 5:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=422, detail="Rating must be 1–5")
+    existing = (await db.execute(
+        select(SurveyResponse).where(SurveyResponse.user_id == current_user.id)
+    )).scalar_one_or_none()
+    if existing:
+        existing.rating = body.rating
+        existing.rating_comment = body.comment
+    else:
+        db.add(SurveyResponse(user_id=current_user.id, rating=body.rating, rating_comment=body.comment))
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

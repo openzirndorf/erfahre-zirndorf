@@ -97,6 +97,7 @@ export interface UserProgress {
   referrals_registered?: number;
   referrals_milestone?: number;
   newsletter_consent?: boolean;
+  my_rating?: number | null;
 }
 
 export interface AuthState {

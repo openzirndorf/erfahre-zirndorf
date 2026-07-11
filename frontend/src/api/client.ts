@@ -147,6 +147,10 @@ export async function updateNewsletterConsent(consent: boolean): Promise<void> {
   await request("/users/me/newsletter", { method: "PATCH", body: JSON.stringify({ consent }) });
 }
 
+export async function submitRating(rating: number, comment?: string): Promise<void> {
+  await request("/users/me/rating", { method: "POST", body: JSON.stringify({ rating, comment: comment ?? null }) });
+}
+
 // Admin
 export async function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   return request(`/admin${path}`, options);

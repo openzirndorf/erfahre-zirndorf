@@ -294,7 +294,7 @@ export function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [flaggedCheckIns, setFlaggedCheckIns] = useState<FlaggedCheckIn[]>([]);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
-  const [surveyResults, setSurveyResults] = useState<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; created_at: string }[]>([]);
+  const [surveyResults, setSurveyResults] = useState<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>([]);
   const [pendingPhotos, setPendingPhotos] = useState<PhotoSubmissionEntry[]>([]);
   const [photoRejectMessages, setPhotoRejectMessages] = useState<Record<number, string>>({});
   const [photoRejectOpen, setPhotoRejectOpen] = useState<Record<number, boolean>>({});
@@ -335,7 +335,7 @@ export function AdminPage() {
         const [loadedStats, loadedHealth, loadedSurvey] = await Promise.all([
           adminFetch<Stats>("/stats"),
           adminFetch<HealthStatus>("/health-status"),
-          adminFetch<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; created_at: string }[]>("/survey/results").catch(() => []),
+          adminFetch<{ id: number; q1: string | null; q2: string | null; q3: string | null; q4: string | null; q5: string | null; rating: number | null; rating_comment: string | null; created_at: string }[]>("/survey/results").catch(() => []),
         ]);
         setStats(loadedStats);
         setHealth(loadedHealth);
@@ -696,6 +696,46 @@ export function AdminPage() {
                   </div>
                 ))}
               </div>
+
+              {surveyResults.some((r) => r.rating) && (() => {
+                const rated = surveyResults.filter((r) => r.rating);
+                const avg = rated.reduce((s, r) => s + (r.rating ?? 0), 0) / rated.length;
+                const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                rated.forEach((r) => { if (r.rating) dist[r.rating] = (dist[r.rating] ?? 0) + 1; });
+                return (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <p className="text-sm font-bold mb-1">Sternebewertung ({rated.length})</p>
+                    <p className="text-2xl font-black mb-3" style={{ color: "#f59e0b" }}>
+                      {"★".repeat(Math.round(avg))}{"☆".repeat(5 - Math.round(avg))}{" "}
+                      <span className="text-base text-gray-600">{avg.toFixed(1)} / 5</span>
+                    </p>
+                    <div className="space-y-1">
+                      {[5, 4, 3, 2, 1].map((star) => (
+                        <div key={star} className="flex items-center gap-2">
+                          <span className="text-xs w-4 text-gray-500">{star}★</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${Math.round(((dist[star] ?? 0) / rated.length) * 100)}%`, background: "#f59e0b" }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500 w-4 text-right">{dist[star] ?? 0}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {rated.some((r) => r.rating_comment) && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold text-gray-600 mb-1">Kommentare</p>
+                        <div className="space-y-1 max-h-40 overflow-y-auto">
+                          {rated.filter((r) => r.rating_comment).map((r) => (
+                            <p key={r.id} className="text-xs text-gray-700 bg-gray-50 rounded-lg px-2 py-1">"{r.rating_comment}"</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {surveyResults.length > 0 && (
                 <div className="bg-white rounded-2xl p-4 shadow-sm">
