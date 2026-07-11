@@ -298,6 +298,7 @@ export function AdminPage() {
   const [eventAnalysis, setEventAnalysis] = useState<{
     fastest: Record<string, Array<{ challenge_id: number; challenge_title: string; display_name: string; checked_in_at: string; seconds_after_start: number }>>;
     total_quiz_challenges: number;
+    top_quiz_users: Array<{ id: number; display_name: string; correct: number; wrong: number; perfect: boolean }>;
     perfect_quiz_users: Array<{ id: number; display_name: string }>;
   } | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<PhotoSubmissionEntry[]>([]);
@@ -826,23 +827,24 @@ export function AdminPage() {
                       );
                     })}
 
-                    {eventAnalysis.total_quiz_challenges > 0 && (
+                    {eventAnalysis.total_quiz_challenges > 0 && eventAnalysis.top_quiz_users.length > 0 && (
                       <div>
                         <p className="text-xs font-semibold text-gray-500 mb-2">
-                          Alle {eventAnalysis.total_quiz_challenges} Rätsel fehlerfrei gelöst
+                          Top 5 Rätsel · von {eventAnalysis.total_quiz_challenges} gesamt
                         </p>
-                        {eventAnalysis.perfect_quiz_users.length === 0 ? (
-                          <p className="text-xs text-gray-400">Niemand hat alle Rätsel ohne Fehler gelöst.</p>
-                        ) : (
-                          <div className="space-y-1">
-                            {eventAnalysis.perfect_quiz_users.map((u) => (
-                              <div key={u.id} className="flex items-center gap-2 text-xs bg-green-50 rounded-lg px-2 py-1.5">
-                                <span className="text-green-700">✓</span>
-                                <span className="font-semibold text-green-800">{u.display_name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="space-y-1">
+                          {eventAnalysis.top_quiz_users.map((u, i) => (
+                            <div key={u.id} className={`flex items-center gap-2 text-xs rounded-lg px-2 py-1.5 ${u.perfect ? "bg-green-50" : "bg-gray-50"}`}>
+                              <span className="font-bold text-gray-400 w-4 text-right shrink-0">{i + 1}.</span>
+                              <span className={`font-semibold flex-1 ${u.perfect ? "text-green-800" : "text-gray-800"}`}>{u.display_name}</span>
+                              <span className={`font-mono font-bold shrink-0 ${u.perfect ? "text-green-700" : ""}`} style={!u.perfect ? { color: "var(--oz-brand-green)" } : {}}>
+                                {u.correct}/{eventAnalysis.total_quiz_challenges}
+                              </span>
+                              {u.wrong > 0 && <span className="text-red-400 shrink-0">{u.wrong}✗</span>}
+                              {u.perfect && <span className="text-green-600 shrink-0">✓</span>}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

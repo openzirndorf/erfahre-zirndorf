@@ -1127,6 +1127,7 @@ async def event_analysis(
             select(CheckIn.user_id, func.count(CheckIn.id).label("cnt"))
             .where(CheckIn.challenge_id.in_(quiz_challenge_ids), CheckIn.success == True)  # noqa: E712
             .group_by(CheckIn.user_id)
+            .order_by(func.count(CheckIn.id).desc())
         )).all()
         # Wrong attempts per user across quiz challenges
         wrong_rows = (await db.execute(
@@ -1136,10 +1137,26 @@ async def event_analysis(
         )).all()
         wrong_by_user = {r.user_id: int(r.total_wrong or 0) for r in wrong_rows}
 
-        perfect_user_ids = [
-            r.user_id for r in success_rows
-            if r.cnt == total_quiz and wrong_by_user.get(r.user_id, 0) == 0
-        ]
+        # Top 5 by correct answers
+        top5_user_ids = [r.user_id for r in success_rows[:5]]
+        top5_users = []
+        if top5_user_ids:
+            user_map = {
+                r.id: r.display_name
+                for r in (await db.execute(
+                    select(User.id, User.display_name).where(User.id.in_(top5_user_ids))
+                )).all()
+            }
+            for r in success_rows[:5]:
+                top5_users.append({
+                    "id": r.user_id,
+                    "display_name": user_map.get(r.user_id, "?"),
+                    "correct": r.cnt,
+                    "wrong": wrong_by_user.get(r.user_id, 0),
+                    "perfect": r.cnt == total_quiz and wrong_by_user.get(r.user_id, 0) == 0,
+                })
+
+        perfect_user_ids = [r.user_id for r in success_rows if r.cnt == total_quiz and wrong_by_user.get(r.user_id, 0) == 0]
         perfect_users = []
         if perfect_user_ids:
             user_rows = (await db.execute(
@@ -1147,11 +1164,13 @@ async def event_analysis(
             )).all()
             perfect_users = [{"id": r.id, "display_name": r.display_name} for r in user_rows]
     else:
+        top5_users = []
         perfect_users = []
 
     return {
         "fastest": fastest,
         "total_quiz_challenges": total_quiz,
+        "top_quiz_users": top5_users,
         "perfect_quiz_users": perfect_users,
     }
 
