@@ -67,6 +67,11 @@ const SPONSORS: Sponsor[] = [
     url: "https://cafe-eders.de/",
   },
   {
+    name: "Wilhelm Tell bei Anna",
+    description: "Restaurant und Gasthof am Achterplätzchen – fränkische und polnische Küche mit Biergarten.",
+    url: "https://www.wilhelmtellbeianna.de/",
+  },
+  {
     name: "GRUWEN BoXX",
     description: "24/7 geöffneter Verkaufsraum ohne Personal in der Siegfriedstraße 2 – regionale Produkte von Direktvermarktern aus dem Landkreis Fürth, bezahlt per Handy oder Karte.",
     url: "https://www.gruwen.de/",
