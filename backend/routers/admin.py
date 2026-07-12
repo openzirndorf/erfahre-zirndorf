@@ -1389,3 +1389,15 @@ async def deactivate_all_challenges(
     )
     await db.commit()
     return {"deactivated": result.rowcount}
+
+
+@router.post("/challenges/activate-all", status_code=200)
+async def activate_all_challenges(
+    _admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        update(Challenge).where(Challenge.is_active == False).values(is_active=True)  # noqa: E712
+    )
+    await db.commit()
+    return {"activated": result.rowcount}
