@@ -333,6 +333,8 @@ export function AdminPage() {
   const [prizeUserOpen, setPrizeUserOpen] = useState(false);
   const [tlRange, setTlRange] = useState<"7" | "14" | "all">("all");
   const [tlMetrics, setTlMetrics] = useState({ cumCheckins: true, cumUsers: true, dailyCheckins: true });
+  const [deactivateConfirm, setDeactivateConfirm] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
 
   // New place form
   const [newPlace, setNewPlace] = useState({
@@ -1039,6 +1041,49 @@ export function AdminPage() {
                 <ClipboardList className="w-4 h-4" />
                 Newsletter-Liste (CSV)
               </button>
+              {!deactivateConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setDeactivateConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold"
+                  style={{ background: "#fee2e2", color: "#dc2626" }}
+                >
+                  Alle Stops deaktivieren
+                </button>
+              ) : (
+                <div className="rounded-2xl p-4" style={{ background: "#fee2e2", border: "1px solid #fca5a5" }}>
+                  <p className="text-sm font-bold text-red-700 mb-3">Wirklich alle Stops auf inaktiv setzen? Das kann nicht rückgängig gemacht werden.</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeactivateConfirm(false)}
+                      className="flex-1 rounded-xl py-2 text-sm font-semibold bg-white text-gray-700"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deactivating}
+                      onClick={async () => {
+                        setDeactivating(true);
+                        try {
+                          const res = await adminFetch<{ deactivated: number }>("/challenges/deactivate-all", { method: "POST" });
+                          showToast(`${res.deactivated} Stops deaktiviert`);
+                          setDeactivateConfirm(false);
+                        } catch (e) {
+                          showToast(e instanceof Error ? e.message : "Fehler");
+                        } finally {
+                          setDeactivating(false);
+                        }
+                      }}
+                      className="flex-1 rounded-xl py-2 text-sm font-bold text-white"
+                      style={{ background: "#dc2626" }}
+                    >
+                      {deactivating ? "Wird deaktiviert…" : "Ja, deaktivieren"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
