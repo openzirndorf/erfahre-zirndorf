@@ -1377,3 +1377,15 @@ async def timeline(
         d += timedelta(days=1)
 
     return {"days": days}
+
+
+@router.post("/challenges/deactivate-all", status_code=200)
+async def deactivate_all_challenges(
+    _admin: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        update(Challenge).where(Challenge.is_active == True).values(is_active=False)  # noqa: E712
+    )
+    await db.commit()
+    return {"deactivated": result.rowcount}
